@@ -1,0 +1,17 @@
+[package]
+name = "sm4sh_model_py"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sm4sh_model = { git = "https://github.com/ScanMountGoat/sm4sh_lib", rev = "eabce57" }
+pyo3 = { version = "0.25.0", features = ["extension-module", "py-clone"] }
+map_py = { git = "https://github.com/ScanMountGoat/map_py", rev = "5640195" }
+numpy = "0.25.0"
+
+[build-dependencies]
+pyo3-build-config = "0.25.0"
+
+[lib]
+name = "sm4sh_model_py"
+crate-type = ["cdylib"]
