@@ -40,6 +40,149 @@ macro_rules! python_enum {
     };
 }
 
+python_enum!(
+    BoneFlags,
+    sm4sh_model::nud::BoneFlags,
+    Disabled,
+    Skinning,
+    ParentBone
+);
+
+python_enum!(
+    PrimitiveType,
+    sm4sh_model::nud::PrimitiveType,
+    TriangleList,
+    TriangleStrip
+);
+
+python_enum!(
+    SrcFactor,
+    sm4sh_model::nud::SrcFactor,
+    One,
+    SourceAlpha,
+    One2,
+    SourceAlpha2,
+    Zero,
+    SourceAlpha3,
+    DestinationAlpha,
+    DestinationAlpha7,
+    DestinationColor,
+    SrcAlpha3,
+    SrcAlpha4,
+    Unk16,
+    Unk33,
+    SrcAlpha5
+);
+
+python_enum!(
+    DstFactor,
+    sm4sh_model::nud::DstFactor,
+    Zero,
+    OneMinusSourceAlpha,
+    One,
+    OneReverseSubtract,
+    SourceAlpha,
+    SourceAlphaReverseSubtract,
+    OneMinusDestinationAlpha,
+    One2,
+    Zero2,
+    Unk10,
+    OneMinusSourceAlpha2,
+    One3,
+    Zero5,
+    Zero3,
+    One4,
+    OneMinusSourceAlpha3,
+    One5
+);
+
+python_enum!(
+    AlphaFunc,
+    sm4sh_model::nud::AlphaFunc,
+    Disabled,
+    Never,
+    Less,
+    Eq,
+    Leq,
+    Neq,
+    Geq,
+    Always
+);
+
+python_enum!(
+    CullMode,
+    sm4sh_model::nud::CullMode,
+    Disabled,
+    Outside,
+    Inside,
+    Disabled2,
+    Inside2,
+    Outside2
+);
+
+python_enum!(
+    MapMode,
+    sm4sh_model::nud::MapMode,
+    TexCoord,
+    EnvCamera,
+    Projection,
+    EnvLight,
+    EnvSpec
+);
+
+python_enum!(
+    MinFilter,
+    sm4sh_model::nud::MinFilter,
+    LinearMipmapLinear,
+    Nearest,
+    Linear,
+    NearestMipmapLinear
+);
+
+python_enum!(
+    MagFilter,
+    sm4sh_model::nud::MagFilter,
+    Unk0,
+    Nearest,
+    Linear
+);
+
+python_enum!(
+    MipDetail,
+    sm4sh_model::nud::MipDetail,
+    OneMipLevelAnisotropicOff,
+    Unk1,
+    OneMipLevelAnisotropicOff2,
+    FourMipLevels,
+    FourMipLevelsAnisotropic,
+    FourMipLevelsTrilinear,
+    FourMipLevelsTrilinearAnisotropic
+);
+
+python_enum!(
+    WrapMode,
+    sm4sh_model::nud::WrapMode,
+    Repeat,
+    MirroredRepeat,
+    ClampToEdge
+);
+
+python_enum!(
+    NutFormat,
+    sm4sh_model::nud::NutFormat,
+    BC1Unorm,
+    BC2Unorm,
+    BC3Unorm,
+    Bgr5A1Unorm,
+    Bgr5A1Unorm2,
+    B5G6R5Unorm,
+    Rgb5A1Unorm,
+    Rgba8Unorm,
+    R32Float,
+    Rgba82,
+    BC5Unorm
+);
+
 // Match the module hierarchy and types of sm4sh_model as closely as possible.
 #[pymodule]
 mod sm4sh_model_py {
@@ -181,147 +324,40 @@ mod sm4sh_model_py {
             pub image_data: Vec<u8>,
         }
 
-        python_enum!(
-            BoneFlags,
-            sm4sh_model::nud::BoneFlags,
-            Disabled,
-            Skinning,
-            ParentBone
-        );
+        #[pymodule_export]
+        use super::BoneFlags;
 
-        python_enum!(
-            PrimitiveType,
-            sm4sh_model::nud::PrimitiveType,
-            TriangleList,
-            TriangleStrip
-        );
+        #[pymodule_export]
+        use super::PrimitiveType;
 
-        python_enum!(
-            SrcFactor,
-            sm4sh_model::nud::SrcFactor,
-            One,
-            SourceAlpha,
-            One2,
-            SourceAlpha2,
-            Zero,
-            SourceAlpha3,
-            DestinationAlpha,
-            DestinationAlpha7,
-            DestinationColor,
-            SrcAlpha3,
-            SrcAlpha4,
-            Unk16,
-            Unk33,
-            SrcAlpha5
-        );
+        #[pymodule_export]
+        use super::SrcFactor;
 
-        python_enum!(
-            DstFactor,
-            sm4sh_model::nud::DstFactor,
-            Zero,
-            OneMinusSourceAlpha,
-            One,
-            OneReverseSubtract,
-            SourceAlpha,
-            SourceAlphaReverseSubtract,
-            OneMinusDestinationAlpha,
-            One2,
-            Zero2,
-            Unk10,
-            OneMinusSourceAlpha2,
-            One3,
-            Zero5,
-            Zero3,
-            One4,
-            OneMinusSourceAlpha3,
-            One5
-        );
+        #[pymodule_export]
+        use super::DstFactor;
 
-        python_enum!(
-            AlphaFunc,
-            sm4sh_model::nud::AlphaFunc,
-            Disabled,
-            Never,
-            Less,
-            Eq,
-            Leq,
-            Neq,
-            Geq,
-            Always
-        );
+        #[pymodule_export]
+        use super::AlphaFunc;
 
-        python_enum!(
-            CullMode,
-            sm4sh_model::nud::CullMode,
-            Disabled,
-            Outside,
-            Inside,
-            Disabled2,
-            Inside2,
-            Outside2
-        );
+        #[pymodule_export]
+        use super::CullMode;
 
-        python_enum!(
-            MapMode,
-            sm4sh_model::nud::MapMode,
-            TexCoord,
-            EnvCamera,
-            Projection,
-            EnvLight,
-            EnvSpec
-        );
+        #[pymodule_export]
+        use super::MapMode;
 
-        python_enum!(
-            MinFilter,
-            sm4sh_model::nud::MinFilter,
-            LinearMipmapLinear,
-            Nearest,
-            Linear,
-            NearestMipmapLinear
-        );
+        #[pymodule_export]
+        use super::MinFilter;
 
-        python_enum!(
-            MagFilter,
-            sm4sh_model::nud::MagFilter,
-            Unk0,
-            Nearest,
-            Linear
-        );
+        #[pymodule_export]
+        use super::MagFilter;
 
-        python_enum!(
-            MipDetail,
-            sm4sh_model::nud::MipDetail,
-            OneMipLevelAnisotropicOff,
-            Unk1,
-            OneMipLevelAnisotropicOff2,
-            FourMipLevels,
-            FourMipLevelsAnisotropic,
-            FourMipLevelsTrilinear,
-            FourMipLevelsTrilinearAnisotropic
-        );
+        #[pymodule_export]
+        use super::MipDetail;
 
-        python_enum!(
-            WrapMode,
-            sm4sh_model::nud::WrapMode,
-            Repeat,
-            MirroredRepeat,
-            ClampToEdge
-        );
+        #[pymodule_export]
+        use super::WrapMode;
 
-        python_enum!(
-            NutFormat,
-            sm4sh_model::nud::NutFormat,
-            BC1Unorm,
-            BC2Unorm,
-            BC3Unorm,
-            Bgr5A1Unorm,
-            Bgr5A1Unorm2,
-            B5G6R5Unorm,
-            Rgb5A1Unorm,
-            Rgba8Unorm,
-            R32Float,
-            Rgba82,
-            BC5Unorm
-        );
+        #[pymodule_export]
+        use super::NutFormat;
     }
 }
