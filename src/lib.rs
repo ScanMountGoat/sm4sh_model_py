@@ -377,6 +377,7 @@ mod sm4sh_model_py {
         #[map(sm4sh_model::nud::VbnBone)]
         pub struct VbnBone {
             pub name: String,
+            pub parent_bone_index: Option<usize>,
             pub bone_type: BoneType,
             pub translation: [f32; 3],
             pub rotation: [f32; 3],
