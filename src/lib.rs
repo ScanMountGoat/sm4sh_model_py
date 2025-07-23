@@ -201,7 +201,7 @@ mod sm4sh_model_py {
     mod nud {
         use map_py::helpers::{from_option_py, into_option_py};
         use map_py::{MapPy, TypedList};
-        use numpy::PyArray1;
+        use numpy::{PyArray1, PyArray3};
         use pyo3::prelude::*;
 
         #[pyfunction]
@@ -370,6 +370,14 @@ mod sm4sh_model_py {
         #[map(sm4sh_model::nud::VbnSkeleton)]
         pub struct VbnSkeleton {
             pub bones: TypedList<VbnBone>,
+        }
+
+        #[pymethods]
+        impl VbnSkeleton {
+            pub fn model_space_transforms(&self, py: Python) -> PyResult<Py<PyArray3<f32>>> {
+                let skeleton: sm4sh_model::nud::VbnSkeleton = self.clone().map_py(py)?;
+                skeleton.model_space_transforms().map_py(py)
+            }
         }
 
         #[pyclass(get_all, set_all)]
