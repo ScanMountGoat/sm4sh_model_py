@@ -183,6 +183,15 @@ python_enum!(
     BC5Unorm
 );
 
+python_enum!(
+    BoneType,
+    sm4sh_model::nud::BoneType,
+    Normal,
+    Follow,
+    Helper,
+    Swing
+);
+
 // Match the module hierarchy and types of sm4sh_model as closely as possible.
 #[pymodule]
 mod sm4sh_model_py {
@@ -190,6 +199,7 @@ mod sm4sh_model_py {
 
     #[pymodule]
     mod nud {
+        use map_py::helpers::{from_option_py, into_option_py};
         use map_py::{MapPy, TypedList};
         use numpy::PyArray1;
         use pyo3::prelude::*;
@@ -209,6 +219,8 @@ mod sm4sh_model_py {
             pub bone_start_index: usize,
             pub bone_end_index: usize,
             pub bounding_sphere: [f32; 4],
+            #[map(from(into_option_py), into(from_option_py))]
+            pub skeleton: Option<Py<VbnSkeleton>>,
         }
 
         #[pyclass(get_all, set_all)]
@@ -237,6 +249,14 @@ mod sm4sh_model_py {
             pub material4: Option<NudMaterial>,
         }
 
+        #[pymethods]
+        impl NudMesh {
+            pub fn triangle_list_indices(&self, py: Python) -> PyResult<Py<PyArray1<u16>>> {
+                let mesh: sm4sh_model::nud::NudMesh = self.clone().map_py(py)?;
+                mesh.triangle_list_indices().to_vec().map_py(py)
+            }
+        }
+
         #[pymodule]
         mod vertex {
             use map_py::{MapPy, TypedList};
@@ -260,6 +280,13 @@ mod sm4sh_model_py {
             #[map(sm4sh_model::nud::vertex::Normals)]
             pub struct Normals(pub sm4sh_model::nud::vertex::Normals);
 
+            #[pymethods]
+            impl Normals {
+                pub fn normals(&self, py: Python) -> PyResult<Option<Py<PyArray2<f32>>>> {
+                    self.0.normals().map_py(py)
+                }
+            }
+
             #[pyclass]
             #[derive(Debug, Clone, MapPy)]
             #[map(sm4sh_model::nud::vertex::Bones)]
@@ -270,10 +297,24 @@ mod sm4sh_model_py {
             #[map(sm4sh_model::nud::vertex::Colors)]
             pub struct Colors(pub sm4sh_model::nud::vertex::Colors);
 
+            #[pymethods]
+            impl Colors {
+                pub fn colors(&self, py: Python) -> PyResult<Option<Py<PyArray2<f32>>>> {
+                    self.0.colors().map_py(py)
+                }
+            }
+
             #[pyclass]
             #[derive(Debug, Clone, MapPy)]
             #[map(sm4sh_model::nud::vertex::Uvs)]
             pub struct Uvs(pub sm4sh_model::nud::vertex::Uvs);
+
+            #[pymethods]
+            impl Uvs {
+                pub fn uvs(&self, py: Python) -> PyResult<Py<PyArray2<f32>>> {
+                    self.0.uvs().map_py(py)
+                }
+            }
         }
 
         #[pyclass(get_all, set_all)]
@@ -324,6 +365,24 @@ mod sm4sh_model_py {
             pub image_data: Vec<u8>,
         }
 
+        #[pyclass(get_all, set_all)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::nud::VbnSkeleton)]
+        pub struct VbnSkeleton {
+            pub bones: TypedList<VbnBone>,
+        }
+
+        #[pyclass(get_all, set_all)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::nud::VbnBone)]
+        pub struct VbnBone {
+            pub name: String,
+            pub bone_type: BoneType,
+            pub translation: [f32; 3],
+            pub rotation: [f32; 3],
+            pub scale: [f32; 3],
+        }
+
         #[pymodule_export]
         use super::BoneFlags;
 
@@ -359,5 +418,8 @@ mod sm4sh_model_py {
 
         #[pymodule_export]
         use super::NutFormat;
+
+        #[pymodule_export]
+        use super::BoneType;
     }
 }
