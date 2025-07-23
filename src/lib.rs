@@ -292,6 +292,19 @@ mod sm4sh_model_py {
             #[map(sm4sh_model::nud::vertex::Bones)]
             pub struct Bones(pub sm4sh_model::nud::vertex::Bones);
 
+            #[pymethods]
+            impl Bones {
+                pub fn bone_indices_weights(
+                    &self,
+                    py: Python,
+                ) -> PyResult<Option<(Py<PyArray2<u32>>, Py<PyArray2<f32>>)>> {
+                    self.0
+                        .bone_indices_weights()
+                        .map(|(indices, weights)| Ok((indices.map_py(py)?, weights.map_py(py)?)))
+                        .transpose()
+                }
+            }
+
             #[pyclass]
             #[derive(Debug, Clone, MapPy)]
             #[map(sm4sh_model::nud::vertex::Colors)]
