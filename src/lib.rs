@@ -206,7 +206,8 @@ mod sm4sh_model_py {
 
         #[pyfunction]
         fn load_model(py: Python, path: &str) -> PyResult<NudModel> {
-            let model = sm4sh_model::nud::load_model(path);
+            // TODO: Create an error type.
+            let model = sm4sh_model::nud::load_model(path).unwrap();
             model.map_py(py)
         }
 
@@ -216,8 +217,6 @@ mod sm4sh_model_py {
         pub struct NudModel {
             pub groups: TypedList<NudMeshGroup>,
             pub textures: TypedList<ImageTexture>,
-            pub bone_start_index: usize,
-            pub bone_end_index: usize,
             pub bounding_sphere: [f32; 4],
             #[map(from(into_option_py), into(from_option_py))]
             pub skeleton: Option<Py<VbnSkeleton>>,
@@ -278,7 +277,7 @@ mod sm4sh_model_py {
             #[pyclass]
             #[derive(Debug, Clone, MapPy)]
             #[map(sm4sh_model::nud::vertex::Normals)]
-            pub struct Normals(pub sm4sh_model::nud::vertex::Normals);
+            pub struct Normals(sm4sh_model::nud::vertex::Normals);
 
             #[pymethods]
             impl Normals {
@@ -290,7 +289,7 @@ mod sm4sh_model_py {
             #[pyclass]
             #[derive(Debug, Clone, MapPy)]
             #[map(sm4sh_model::nud::vertex::Bones)]
-            pub struct Bones(pub sm4sh_model::nud::vertex::Bones);
+            pub struct Bones(sm4sh_model::nud::vertex::Bones);
 
             #[pymethods]
             impl Bones {
@@ -308,7 +307,7 @@ mod sm4sh_model_py {
             #[pyclass]
             #[derive(Debug, Clone, MapPy)]
             #[map(sm4sh_model::nud::vertex::Colors)]
-            pub struct Colors(pub sm4sh_model::nud::vertex::Colors);
+            pub struct Colors(sm4sh_model::nud::vertex::Colors);
 
             #[pymethods]
             impl Colors {
@@ -320,7 +319,7 @@ mod sm4sh_model_py {
             #[pyclass]
             #[derive(Debug, Clone, MapPy)]
             #[map(sm4sh_model::nud::vertex::Uvs)]
-            pub struct Uvs(pub sm4sh_model::nud::vertex::Uvs);
+            pub struct Uvs(sm4sh_model::nud::vertex::Uvs);
 
             #[pymethods]
             impl Uvs {
@@ -398,6 +397,7 @@ mod sm4sh_model_py {
         #[map(sm4sh_model::nud::VbnBone)]
         pub struct VbnBone {
             pub name: String,
+            pub hash: u32,
             pub parent_bone_index: Option<usize>,
             pub bone_type: BoneType,
             pub translation: [f32; 3],
@@ -443,5 +443,131 @@ mod sm4sh_model_py {
 
         #[pymodule_export]
         use super::BoneType;
+    }
+
+    #[pymodule]
+    mod animation {
+        use map_py::{MapPy, TypedList};
+        use numpy::{PyArray2, PyArray3};
+        use pyo3::{
+            prelude::*,
+            types::{PyDict, PyList},
+        };
+
+        use super::nud::VbnSkeleton;
+
+        #[pyfunction]
+        fn load_animations(py: Python, path: &str) -> PyResult<TypedList<(String, Animation)>> {
+            // TODO: Create an error type.
+            let animations = sm4sh_model::animation::load_animations(path).unwrap();
+            // TODO: Derive mappy conversions for tuples?
+            let elements = animations
+                .into_iter()
+                .map(|(name, animation)| {
+                    let a: Animation = animation.map_py(py)?;
+                    Ok((name, a))
+                })
+                .collect::<PyResult<Vec<_>>>()?;
+
+            // TODO: Add typedlist constructor to mappy
+            let mut list = TypedList::empty(py);
+            list.list = PyList::new(py, elements)?.into();
+            Ok(list)
+        }
+
+        #[pyclass(get_all, set_all)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::animation::Animation)]
+        pub struct Animation {
+            pub nodes: TypedList<AnimationNode>,
+            pub frame_count: usize,
+        }
+
+        #[pymethods]
+        impl Animation {
+            pub fn skinning_transforms(
+                &self,
+                py: Python,
+                skeleton: VbnSkeleton,
+                frame: f32,
+            ) -> PyResult<Py<PyArray3<f32>>> {
+                let animation: sm4sh_model::animation::Animation = self.clone().map_py(py)?;
+                let skeleton = skeleton.map_py(py)?;
+                let transforms = animation.skinning_transforms(&skeleton, frame);
+                transforms.map_py(py)
+            }
+
+            pub fn model_space_transforms(
+                &self,
+                py: Python,
+                skeleton: VbnSkeleton,
+                frame: f32,
+            ) -> PyResult<Py<PyArray3<f32>>> {
+                let animation: sm4sh_model::animation::Animation = self.clone().map_py(py)?;
+                let skeleton = skeleton.map_py(py)?;
+                let transforms = animation.model_space_transforms(&skeleton, frame);
+                transforms.map_py(py)
+            }
+
+            pub fn local_space_transforms(
+                &self,
+                py: Python,
+                skeleton: VbnSkeleton,
+                frame: f32,
+            ) -> PyResult<Py<PyArray3<f32>>> {
+                let animation: sm4sh_model::animation::Animation = self.clone().map_py(py)?;
+                let skeleton = skeleton.map_py(py)?;
+                let transforms = animation.local_space_transforms(&skeleton, frame);
+                transforms.map_py(py)
+            }
+
+            pub fn fcurves(
+                &self,
+                py: Python,
+                skeleton: VbnSkeleton,
+                use_blender_coordinates: bool,
+            ) -> PyResult<FCurves> {
+                let animation: sm4sh_model::animation::Animation = self.clone().map_py(py)?;
+                let skeleton = skeleton.map_py(py)?;
+                let fcurves = animation.fcurves(&skeleton, use_blender_coordinates);
+
+                let translation = PyDict::new(py);
+                for (k, v) in &fcurves.translation {
+                    let v: Py<PyArray2<f32>> = v.clone().map_py(py)?;
+                    translation.set_item(k, v.into_pyobject(py)?)?;
+                }
+
+                let rotation = PyDict::new(py);
+                for (k, v) in &fcurves.rotation {
+                    let v: Py<PyArray2<f32>> = v.clone().map_py(py)?;
+                    rotation.set_item(k, v.into_pyobject(py)?)?;
+                }
+
+                let scale = PyDict::new(py);
+                for (k, v) in &fcurves.scale {
+                    let v: Py<PyArray2<f32>> = v.clone().map_py(py)?;
+                    scale.set_item(k, v.into_pyobject(py)?)?;
+                }
+
+                Ok(FCurves {
+                    translation: translation.into(),
+                    rotation: rotation.into(),
+                    scale: scale.into(),
+                })
+            }
+        }
+
+        #[pyclass]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::animation::AnimationNode)]
+        pub struct AnimationNode(sm4sh_model::animation::AnimationNode);
+
+        #[pyclass(get_all, set_all)]
+        #[derive(Debug, Clone)]
+        pub struct FCurves {
+            pub translation: Py<PyDict>,
+            pub rotation: Py<PyDict>,
+            pub scale: Py<PyDict>,
+        }
     }
 }
