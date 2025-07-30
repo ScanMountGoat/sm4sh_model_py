@@ -211,6 +211,18 @@ mod sm4sh_model_py {
             model.map_py(py)
         }
 
+        #[pyclass]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_lib::nud::Nud)]
+        pub struct Nud(sm4sh_lib::nud::Nud);
+
+        #[pymethods]
+        impl Nud {
+            fn save(&self, path: &str) -> PyResult<()> {
+                self.0.save(path).map_err(Into::into)
+            }
+        }
+
         #[pyclass(get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::nud::NudModel)]
@@ -237,6 +249,13 @@ mod sm4sh_model_py {
                     bounding_sphere,
                     skeleton,
                 }
+            }
+
+            fn to_nud(&self, py: Python) -> PyResult<Nud> {
+                // TODO: Avoid unwrap.
+                let model: sm4sh_model::nud::NudModel = self.clone().map_py(py)?;
+                let nud = model.to_nud().unwrap();
+                Ok(Nud(nud))
             }
         }
 
