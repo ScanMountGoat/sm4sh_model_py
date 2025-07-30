@@ -222,6 +222,24 @@ mod sm4sh_model_py {
             pub skeleton: Option<Py<VbnSkeleton>>,
         }
 
+        #[pymethods]
+        impl NudModel {
+            #[new]
+            fn new(
+                groups: TypedList<NudMeshGroup>,
+                textures: TypedList<ImageTexture>,
+                bounding_sphere: [f32; 4],
+                skeleton: Option<Py<VbnSkeleton>>,
+            ) -> Self {
+                Self {
+                    groups,
+                    textures,
+                    bounding_sphere,
+                    skeleton,
+                }
+            }
+        }
+
         #[pyclass(get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::nud::NudMeshGroup)]
@@ -232,6 +250,28 @@ mod sm4sh_model_py {
             pub bounding_sphere: [f32; 4],
             pub bone_flags: BoneFlags,
             pub parent_bone_index: Option<usize>,
+        }
+
+        #[pymethods]
+        impl NudMeshGroup {
+            #[new]
+            fn new(
+                name: String,
+                meshes: TypedList<NudMesh>,
+                sort_bias: f32,
+                bounding_sphere: [f32; 4],
+                bone_flags: BoneFlags,
+                parent_bone_index: Option<usize>,
+            ) -> Self {
+                Self {
+                    name,
+                    meshes,
+                    sort_bias,
+                    bounding_sphere,
+                    bone_flags,
+                    parent_bone_index,
+                }
+            }
         }
 
         #[pyclass(get_all, set_all)]
@@ -250,6 +290,29 @@ mod sm4sh_model_py {
 
         #[pymethods]
         impl NudMesh {
+            #[new]
+            fn new(
+                vertices: vertex::Vertices,
+                vertex_indices: Py<PyArray1<u16>>,
+                unk3: bool,
+                primitive_type: PrimitiveType,
+                material1: Option<NudMaterial>,
+                material2: Option<NudMaterial>,
+                material3: Option<NudMaterial>,
+                material4: Option<NudMaterial>,
+            ) -> Self {
+                Self {
+                    vertices,
+                    vertex_indices,
+                    unk3,
+                    primitive_type,
+                    material1,
+                    material2,
+                    material3,
+                    material4,
+                }
+            }
+
             pub fn triangle_list_indices(&self, py: Python) -> PyResult<Py<PyArray1<u16>>> {
                 let mesh: sm4sh_model::nud::NudMesh = self.clone().map_py(py)?;
                 mesh.triangle_list_indices().to_vec().map_py(py)
@@ -273,7 +336,28 @@ mod sm4sh_model_py {
                 pub uvs: TypedList<Uvs>,
             }
 
+            #[pymethods]
+            impl Vertices {
+                #[new]
+                fn new(
+                    positions: Py<PyArray2<f32>>,
+                    normals: Normals,
+                    bones: Bones,
+                    colors: Colors,
+                    uvs: TypedList<Uvs>,
+                ) -> Self {
+                    Self {
+                        positions,
+                        normals,
+                        bones,
+                        colors,
+                        uvs,
+                    }
+                }
+            }
+
             // TODO: Rework these to be representable using numpy arrays.
+            // TODO: Complex enums?
             #[pyclass]
             #[derive(Debug, Clone, MapPy)]
             #[map(sm4sh_model::nud::vertex::Normals)]
@@ -283,6 +367,36 @@ mod sm4sh_model_py {
             impl Normals {
                 pub fn normals(&self, py: Python) -> PyResult<Option<Py<PyArray2<f32>>>> {
                     self.0.normals().map_py(py)
+                }
+
+                #[staticmethod]
+                fn from_normals_tangents_bitangents_float32(
+                    py: Python,
+                    normals: Py<PyArray2<f32>>,
+                    tangents: Py<PyArray2<f32>>,
+                    bitangents: Py<PyArray2<f32>>,
+                ) -> PyResult<Self> {
+                    let normals: Vec<[f32; 4]> = normals.map_py(py)?;
+                    let tangents: Vec<[f32; 4]> = tangents.map_py(py)?;
+                    let bitangents: Vec<[f32; 4]> = bitangents.map_py(py)?;
+
+                    let items = normals
+                        .into_iter()
+                        .zip(tangents.into_iter())
+                        .zip(bitangents.into_iter())
+                        .map(|((normal, tangent), bitangent)| {
+                            sm4sh_model::nud::vertex::NormalsTangentBitangentFloat32 {
+                                unk1: 1.0,
+                                normal,
+                                bitangent,
+                                tangent,
+                            }
+                        })
+                        .collect();
+
+                    Ok(Self(
+                        sm4sh_model::nud::vertex::Normals::NormalsTangentBitangentFloat32(items),
+                    ))
                 }
             }
 
@@ -302,6 +416,29 @@ mod sm4sh_model_py {
                         .map(|(indices, weights)| Ok((indices.map_py(py)?, weights.map_py(py)?)))
                         .transpose()
                 }
+
+                #[staticmethod]
+                fn from_bone_indices_weights_float32(
+                    py: Python,
+                    indices: Py<PyArray2<u32>>,
+                    weights: Py<PyArray2<f32>>,
+                ) -> PyResult<Self> {
+                    let indices: Vec<[u32; 4]> = indices.map_py(py)?;
+                    let weights: Vec<[f32; 4]> = weights.map_py(py)?;
+
+                    let items = indices
+                        .into_iter()
+                        .zip(weights.into_iter())
+                        .map(|(bone_indices, bone_weights)| {
+                            sm4sh_model::nud::vertex::BonesFloat32 {
+                                bone_indices,
+                                bone_weights,
+                            }
+                        })
+                        .collect();
+
+                    Ok(Self(sm4sh_model::nud::vertex::Bones::Float32(items)))
+                }
             }
 
             #[pyclass]
@@ -314,6 +451,16 @@ mod sm4sh_model_py {
                 pub fn colors(&self, py: Python) -> PyResult<Option<Py<PyArray2<f32>>>> {
                     self.0.colors().map_py(py)
                 }
+
+                #[staticmethod]
+                fn from_colors_byte(py: Python, colors: Py<PyArray2<u8>>) -> PyResult<Self> {
+                    let colors: Vec<[u8; 4]> = colors.map_py(py)?;
+                    let items = colors
+                        .into_iter()
+                        .map(|rgba| sm4sh_model::nud::vertex::ColorByte { rgba })
+                        .collect();
+                    Ok(Self(sm4sh_model::nud::vertex::Colors::Byte(items)))
+                }
             }
 
             #[pyclass]
@@ -325,6 +472,16 @@ mod sm4sh_model_py {
             impl Uvs {
                 pub fn uvs(&self, py: Python) -> PyResult<Py<PyArray2<f32>>> {
                     self.0.uvs().map_py(py)
+                }
+
+                #[staticmethod]
+                fn from_uvs_float32(py: Python, uvs: Py<PyArray2<f32>>) -> PyResult<Self> {
+                    let uvs: Vec<[f32; 2]> = uvs.map_py(py)?;
+                    let items = uvs
+                        .into_iter()
+                        .map(|[u, v]| sm4sh_model::nud::vertex::UvsFloat32 { u, v })
+                        .collect();
+                    Ok(Self(sm4sh_model::nud::vertex::Uvs::Float32(items)))
                 }
             }
         }
@@ -344,6 +501,30 @@ mod sm4sh_model_py {
             pub properties: TypedList<NudProperty>,
         }
 
+        #[pymethods]
+        impl NudMaterial {
+            #[new]
+            fn new(
+                flags: u32,
+                src_factor: SrcFactor,
+                dst_factor: DstFactor,
+                alpha_func: AlphaFunc,
+                cull_mode: CullMode,
+                textures: TypedList<NudTexture>,
+                properties: TypedList<NudProperty>,
+            ) -> Self {
+                Self {
+                    flags,
+                    src_factor,
+                    dst_factor,
+                    alpha_func,
+                    cull_mode,
+                    textures,
+                    properties,
+                }
+            }
+        }
+
         #[pyclass(get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::nud::NudTexture)]
@@ -357,12 +538,44 @@ mod sm4sh_model_py {
             pub mip_detail: MipDetail,
         }
 
+        #[pymethods]
+        impl NudTexture {
+            #[new]
+            fn new(
+                hash: u32,
+                map_mode: MapMode,
+                wrap_mode_s: WrapMode,
+                wrap_mode_t: WrapMode,
+                min_filter: MinFilter,
+                mag_filter: MagFilter,
+                mip_detail: MipDetail,
+            ) -> Self {
+                Self {
+                    hash,
+                    map_mode,
+                    wrap_mode_s,
+                    wrap_mode_t,
+                    min_filter,
+                    mag_filter,
+                    mip_detail,
+                }
+            }
+        }
+
         #[pyclass(get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::nud::NudProperty)]
         pub struct NudProperty {
             pub name: String,
             pub values: Vec<f32>,
+        }
+
+        #[pymethods]
+        impl NudProperty {
+            #[new]
+            fn new(name: String, values: Vec<f32>) -> Self {
+                Self { name, values }
+            }
         }
 
         #[pyclass(get_all, set_all)]
@@ -377,6 +590,28 @@ mod sm4sh_model_py {
             pub image_data: Vec<u8>,
         }
 
+        #[pymethods]
+        impl ImageTexture {
+            #[new]
+            fn new(
+                hash_id: u32,
+                width: u32,
+                height: u32,
+                mipmap_count: u32,
+                image_format: NutFormat,
+                image_data: Vec<u8>,
+            ) -> Self {
+                Self {
+                    hash_id,
+                    width,
+                    height,
+                    mipmap_count,
+                    image_format,
+                    image_data,
+                }
+            }
+        }
+
         #[pyclass(get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::nud::VbnSkeleton)]
@@ -386,6 +621,11 @@ mod sm4sh_model_py {
 
         #[pymethods]
         impl VbnSkeleton {
+            #[new]
+            fn new(bones: TypedList<VbnBone>) -> Self {
+                Self { bones }
+            }
+
             pub fn model_space_transforms(&self, py: Python) -> PyResult<Py<PyArray3<f32>>> {
                 let skeleton: sm4sh_model::nud::VbnSkeleton = self.clone().map_py(py)?;
                 skeleton.model_space_transforms().map_py(py)
@@ -403,6 +643,30 @@ mod sm4sh_model_py {
             pub translation: [f32; 3],
             pub rotation: [f32; 3],
             pub scale: [f32; 3],
+        }
+
+        #[pymethods]
+        impl VbnBone {
+            #[new]
+            fn new(
+                name: String,
+                hash: u32,
+                parent_bone_index: Option<usize>,
+                bone_type: BoneType,
+                translation: [f32; 3],
+                rotation: [f32; 3],
+                scale: [f32; 3],
+            ) -> Self {
+                Self {
+                    name,
+                    hash,
+                    parent_bone_index,
+                    bone_type,
+                    translation,
+                    rotation,
+                    scale,
+                }
+            }
         }
 
         #[pymodule_export]
@@ -485,6 +749,11 @@ mod sm4sh_model_py {
 
         #[pymethods]
         impl Animation {
+            #[new]
+            fn new(nodes: TypedList<AnimationNode>, frame_count: usize) -> Self {
+                Self { nodes, frame_count }
+            }
+
             pub fn skinning_transforms(
                 &self,
                 py: Python,
