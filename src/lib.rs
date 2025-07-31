@@ -682,6 +682,7 @@ mod sm4sh_model_py {
         }
     }
 
+    #[pymodule]
     mod skinning {
         use map_py::{MapPy, TypedList};
         use numpy::PyArray2;
