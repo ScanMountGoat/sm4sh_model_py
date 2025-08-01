@@ -290,7 +290,6 @@ mod sm4sh_model_py {
     pub struct NudMesh {
         pub vertices: vertex::Vertices,
         pub vertex_indices: Py<PyArray1<u16>>,
-        pub unk3: bool,
         pub primitive_type: PrimitiveType,
         pub material1: Option<NudMaterial>,
         pub material2: Option<NudMaterial>,
@@ -304,7 +303,6 @@ mod sm4sh_model_py {
         fn new(
             vertices: vertex::Vertices,
             vertex_indices: Py<PyArray1<u16>>,
-            unk3: bool,
             primitive_type: PrimitiveType,
             material1: Option<NudMaterial>,
             material2: Option<NudMaterial>,
@@ -314,7 +312,6 @@ mod sm4sh_model_py {
             Self {
                 vertices,
                 vertex_indices,
-                unk3,
                 primitive_type,
                 material1,
                 material2,
@@ -784,7 +781,7 @@ mod sm4sh_model_py {
             pub normals: Normals,
             pub bones: Bones,
             pub colors: Colors,
-            pub uvs: TypedList<Uvs>,
+            pub uvs: Uvs,
         }
 
         #[pymethods]
@@ -795,7 +792,7 @@ mod sm4sh_model_py {
                 normals: Normals,
                 bones: Bones,
                 colors: Colors,
-                uvs: TypedList<Uvs>,
+                uvs: Uvs,
             ) -> Self {
                 Self {
                     positions,
@@ -921,18 +918,22 @@ mod sm4sh_model_py {
 
         #[pymethods]
         impl Uvs {
-            pub fn uvs(&self, py: Python) -> PyResult<Py<PyArray2<f32>>> {
+            pub fn uvs(&self, py: Python) -> PyResult<TypedList<Py<PyArray2<f32>>>> {
                 self.0.uvs().map_py(py)
             }
 
             #[staticmethod]
-            fn from_uvs_float32(py: Python, uvs: Py<PyArray2<f32>>) -> PyResult<Self> {
-                let uvs: Vec<[f32; 2]> = uvs.map_py(py)?;
-                let items = uvs
+            fn from_uvs_float32(py: Python, uvs: TypedList<Py<PyArray2<f32>>>) -> PyResult<Self> {
+                let uvs: Vec<Vec<[f32; 2]>> = uvs.map_py(py)?;
+                let uv_layers = uvs
                     .into_iter()
-                    .map(|[u, v]| sm4sh_model::vertex::UvsFloat32 { u, v })
+                    .map(|uvs| {
+                        uvs.into_iter()
+                            .map(|[u, v]| sm4sh_model::vertex::UvFloat32 { u, v })
+                            .collect()
+                    })
                     .collect();
-                Ok(Self(sm4sh_model::vertex::Uvs::Float32(items)))
+                Ok(Self(sm4sh_model::vertex::Uvs::Float32(uv_layers)))
             }
         }
     }
