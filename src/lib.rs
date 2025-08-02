@@ -186,6 +186,14 @@ python_enum!(
     Swing
 );
 
+python_enum!(
+    BoneElementType,
+    sm4sh_model::vertex::BoneElementType,
+    Float32,
+    Float16,
+    Byte
+);
+
 // Match the module hierarchy and types of sm4sh_model as closely as possible.
 #[pymodule]
 mod sm4sh_model_py {
@@ -769,7 +777,10 @@ mod sm4sh_model_py {
 
     #[pymodule]
     mod vertex {
-        use map_py::{MapPy, TypedList};
+        use map_py::{
+            MapPy, TypedList,
+            helpers::{from_option_py, into_option_py},
+        };
         use numpy::PyArray2;
         use pyo3::prelude::*;
 
@@ -779,7 +790,8 @@ mod sm4sh_model_py {
         pub struct Vertices {
             pub positions: Py<PyArray2<f32>>,
             pub normals: Normals,
-            pub bones: Bones,
+            #[map(from(into_option_py), into(from_option_py))]
+            pub bones: Option<Py<Bones>>,
             pub colors: Colors,
             pub uvs: Uvs,
         }
@@ -790,7 +802,7 @@ mod sm4sh_model_py {
             fn new(
                 positions: Py<PyArray2<f32>>,
                 normals: Normals,
-                bones: Bones,
+                bones: Option<Py<Bones>>,
                 colors: Colors,
                 uvs: Uvs,
             ) -> Self {
@@ -848,46 +860,33 @@ mod sm4sh_model_py {
             }
         }
 
-        #[pyclass]
+        #[pyclass(get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::vertex::Bones)]
-        pub struct Bones(sm4sh_model::vertex::Bones);
+        pub struct Bones {
+            pub bone_indices: Py<PyArray2<u32>>,
+            pub weights: Py<PyArray2<f32>>,
+            pub element_type: BoneElementType,
+        }
 
         #[pymethods]
         impl Bones {
-            pub fn bone_indices_weights(
-                &self,
-                py: Python,
-            ) -> PyResult<Option<(Py<PyArray2<u32>>, Py<PyArray2<f32>>)>> {
-                self.0
-                    .bone_indices_weights()
-                    .map(|(indices, weights)| Ok((indices.map_py(py)?, weights.map_py(py)?)))
-                    .transpose()
-            }
-
-            #[staticmethod]
-            fn from_bone_indices_weights_float32(
-                py: Python,
-                indices: Py<PyArray2<u32>>,
+            #[new]
+            fn new(
+                bone_indices: Py<PyArray2<u32>>,
                 weights: Py<PyArray2<f32>>,
-            ) -> PyResult<Self> {
-                let indices: Vec<[u32; 4]> = indices.map_py(py)?;
-                let weights: Vec<[f32; 4]> = weights.map_py(py)?;
-
-                let items = indices
-                    .into_iter()
-                    .zip(weights.into_iter())
-                    .map(
-                        |(bone_indices, bone_weights)| sm4sh_model::vertex::BonesFloat32 {
-                            bone_indices,
-                            bone_weights,
-                        },
-                    )
-                    .collect();
-
-                Ok(Self(sm4sh_model::vertex::Bones::Float32(items)))
+                element_type: BoneElementType,
+            ) -> Self {
+                Self {
+                    bone_indices,
+                    weights,
+                    element_type,
+                }
             }
         }
+
+        #[pymodule_export]
+        use super::super::BoneElementType;
 
         #[pyclass]
         #[derive(Debug, Clone, MapPy)]
