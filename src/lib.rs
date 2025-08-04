@@ -194,6 +194,13 @@ python_enum!(
     Byte
 );
 
+python_enum!(
+    ColorElementType,
+    sm4sh_model::vertex::ColorElementType,
+    Byte,
+    Float16
+);
+
 // Match the module hierarchy and types of sm4sh_model as closely as possible.
 #[pymodule]
 mod sm4sh_model_py {
@@ -266,7 +273,6 @@ mod sm4sh_model_py {
         pub meshes: TypedList<NudMesh>,
         pub sort_bias: f32,
         pub bounding_sphere: [f32; 4],
-        pub bone_flags: BoneFlags,
         pub parent_bone_index: Option<usize>,
     }
 
@@ -278,7 +284,6 @@ mod sm4sh_model_py {
             meshes: TypedList<NudMesh>,
             sort_bias: f32,
             bounding_sphere: [f32; 4],
-            bone_flags: BoneFlags,
             parent_bone_index: Option<usize>,
         ) -> Self {
             Self {
@@ -286,7 +291,6 @@ mod sm4sh_model_py {
                 meshes,
                 sort_bias,
                 bounding_sphere,
-                bone_flags,
                 parent_bone_index,
             }
         }
@@ -777,6 +781,7 @@ mod sm4sh_model_py {
 
     #[pymodule]
     mod vertex {
+        use half::f16;
         use map_py::{
             MapPy, TypedList,
             helpers::{from_option_py, into_option_py},
@@ -792,7 +797,8 @@ mod sm4sh_model_py {
             pub normals: Normals,
             #[map(from(into_option_py), into(from_option_py))]
             pub bones: Option<Py<Bones>>,
-            pub colors: Colors,
+            #[map(from(into_option_py), into(from_option_py))]
+            pub colors: Option<Py<Colors>>,
             pub uvs: Uvs,
         }
 
@@ -803,7 +809,7 @@ mod sm4sh_model_py {
                 positions: Py<PyArray2<f32>>,
                 normals: Normals,
                 bones: Option<Py<Bones>>,
-                colors: Colors,
+                colors: Option<Py<Colors>>,
                 uvs: Uvs,
             ) -> Self {
                 Self {
@@ -827,6 +833,35 @@ mod sm4sh_model_py {
         impl Normals {
             pub fn normals(&self, py: Python) -> PyResult<Option<Py<PyArray2<f32>>>> {
                 self.0.normals().map_py(py)
+            }
+
+            #[staticmethod]
+            fn from_normals_tangents_bitangents_float16(
+                py: Python,
+                normals: Py<PyArray2<f32>>,
+                tangents: Py<PyArray2<f32>>,
+                bitangents: Py<PyArray2<f32>>,
+            ) -> PyResult<Self> {
+                let normals: Vec<[f32; 4]> = normals.map_py(py)?;
+                let tangents: Vec<[f32; 4]> = tangents.map_py(py)?;
+                let bitangents: Vec<[f32; 4]> = bitangents.map_py(py)?;
+
+                let items = normals
+                    .into_iter()
+                    .zip(tangents.into_iter())
+                    .zip(bitangents.into_iter())
+                    .map(|((normal, tangent), bitangent)| {
+                        sm4sh_model::vertex::NormalsTangentBitangentFloat16 {
+                            normal: normal.map(f16::from_f32),
+                            bitangent: bitangent.map(f16::from_f32),
+                            tangent: tangent.map(f16::from_f32),
+                        }
+                    })
+                    .collect();
+
+                Ok(Self(
+                    sm4sh_model::vertex::Normals::NormalsTangentBitangentFloat16(items),
+                ))
             }
 
             #[staticmethod]
@@ -888,27 +923,27 @@ mod sm4sh_model_py {
         #[pymodule_export]
         use super::super::BoneElementType;
 
-        #[pyclass]
+        #[pyclass(get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::vertex::Colors)]
-        pub struct Colors(sm4sh_model::vertex::Colors);
+        pub struct Colors {
+            pub colors: Py<PyArray2<f32>>,
+            pub element_type: ColorElementType,
+        }
 
         #[pymethods]
         impl Colors {
-            pub fn colors(&self, py: Python) -> PyResult<Option<Py<PyArray2<f32>>>> {
-                self.0.colors().map_py(py)
-            }
-
-            #[staticmethod]
-            fn from_colors_byte(py: Python, colors: Py<PyArray2<u8>>) -> PyResult<Self> {
-                let colors: Vec<[u8; 4]> = colors.map_py(py)?;
-                let items = colors
-                    .into_iter()
-                    .map(|rgba| sm4sh_model::vertex::ColorByte { rgba })
-                    .collect();
-                Ok(Self(sm4sh_model::vertex::Colors::Byte(items)))
+            #[new]
+            fn new(colors: Py<PyArray2<f32>>, element_type: ColorElementType) -> Self {
+                Self {
+                    colors,
+                    element_type,
+                }
             }
         }
+
+        #[pymodule_export]
+        use super::super::ColorElementType;
 
         #[pyclass]
         #[derive(Debug, Clone, MapPy)]
