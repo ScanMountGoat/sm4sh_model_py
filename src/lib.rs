@@ -957,6 +957,23 @@ mod sm4sh_model_py {
             }
 
             #[staticmethod]
+            fn from_uvs_float16(py: Python, uvs: TypedList<Py<PyArray2<f32>>>) -> PyResult<Self> {
+                let uvs: Vec<Vec<[f32; 2]>> = uvs.map_py(py)?;
+                let uv_layers = uvs
+                    .into_iter()
+                    .map(|uvs| {
+                        uvs.into_iter()
+                            .map(|[u, v]| sm4sh_model::vertex::UvFloat16 {
+                                u: f16::from_f32(u),
+                                v: f16::from_f32(v),
+                            })
+                            .collect()
+                    })
+                    .collect();
+                Ok(Self(sm4sh_model::vertex::Uvs::Float16(uv_layers)))
+            }
+
+            #[staticmethod]
             fn from_uvs_float32(py: Python, uvs: TypedList<Py<PyArray2<f32>>>) -> PyResult<Self> {
                 let uvs: Vec<Vec<[f32; 2]>> = uvs.map_py(py)?;
                 let uv_layers = uvs
