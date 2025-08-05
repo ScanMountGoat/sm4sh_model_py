@@ -206,9 +206,14 @@ python_enum!(
 mod sm4sh_model_py {
     use super::*;
 
+    use std::io::Cursor;
+    use std::ops::Deref;
+
     use map_py::helpers::{from_option_py, into_option_py};
     use map_py::{MapPy, TypedList};
     use numpy::{PyArray1, PyArray3};
+    use pyo3::types::PyBytes;
+    use rayon::prelude::*;
 
     #[pyfunction]
     fn load_model(py: Python, path: &str) -> PyResult<NudModel> {
@@ -227,6 +232,52 @@ mod sm4sh_model_py {
         fn save(&self, path: &str) -> PyResult<()> {
             self.0.save(path).map_err(Into::into)
         }
+    }
+
+    #[pyfunction]
+    fn decode_images_png(
+        py: Python,
+        image_textures: Vec<PyRef<ImageTexture>>,
+    ) -> PyResult<Vec<Py<PyBytes>>> {
+        // TODO: avoid unwrap.
+        let textures: Vec<&ImageTexture> = image_textures.iter().map(|i| i.deref()).collect();
+        let buffers = textures
+            .par_iter()
+            .map(|image| {
+                // Create the surface manually to avoid copies.
+                let format: sm4sh_model::NutFormat = image.image_format.into();
+                let surface = image_dds::Surface {
+                    width: image.width,
+                    height: image.height,
+                    depth: 1,
+                    layers: 1,
+                    mipmaps: image.mipmap_count,
+                    image_format: format.into(),
+                    data: &image.image_data,
+                };
+
+                Ok(surface
+                    .decode_layers_mipmaps_rgba8(0..surface.layers, 0..1)
+                    .unwrap()
+                    .data)
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+
+        buffers
+            .into_iter()
+            .zip(textures)
+            .map(|(buffer, texture)| {
+                let mut writer = Cursor::new(Vec::new());
+                let image =
+                    image_dds::image::RgbaImage::from_raw(texture.width, texture.height, buffer)
+                        .unwrap();
+                image
+                    .write_to(&mut writer, image_dds::image::ImageFormat::Png)
+                    .unwrap();
+
+                Ok(PyBytes::new(py, &writer.into_inner()).into())
+            })
+            .collect()
     }
 
     #[pyclass(get_all, set_all)]

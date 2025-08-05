@@ -10,6 +10,9 @@ pyo3 = { version = "0.25.0", features = ["extension-module", "py-clone"] }
 map_py = { git = "https://github.com/ScanMountGoat/map_py", rev = "5640195" }
 numpy = "0.25.0"
 half = "2.6.0"
+image_dds = "0.7.1"
+image = "0.25.6"
+rayon = "1.7.0"
 
 [build-dependencies]
 pyo3-build-config = "0.25.0"
