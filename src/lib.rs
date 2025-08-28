@@ -393,9 +393,7 @@ mod sm4sh_model_py {
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::NudMaterial)]
     pub struct NudMaterial {
-        // TODO: Should this recreate flags or store them directly?
-        #[map(from(map_py::helpers::into), into(map_py::helpers::try_into))]
-        pub flags: u32,
+        pub shader_id: u32,
         pub src_factor: SrcFactor,
         pub dst_factor: DstFactor,
         pub alpha_func: AlphaFunc,
@@ -408,7 +406,7 @@ mod sm4sh_model_py {
     impl NudMaterial {
         #[new]
         fn new(
-            flags: u32,
+            shader_id: u32,
             src_factor: SrcFactor,
             dst_factor: DstFactor,
             alpha_func: AlphaFunc,
@@ -417,7 +415,7 @@ mod sm4sh_model_py {
             properties: TypedList<NudProperty>,
         ) -> Self {
             Self {
-                flags,
+                shader_id,
                 src_factor,
                 dst_factor,
                 alpha_func,
@@ -739,6 +737,61 @@ mod sm4sh_model_py {
             pub translation: Py<PyDict>,
             pub rotation: Py<PyDict>,
             pub scale: Py<PyDict>,
+        }
+    }
+
+    #[pymodule]
+    mod database {
+        use std::collections::BTreeMap;
+
+        use map_py::MapPy;
+        use pyo3::{prelude::*, types::PyDict};
+
+        #[pyclass]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::database::ShaderDatabase)]
+        pub struct ShaderDatabase(sm4sh_model::database::ShaderDatabase);
+
+        #[pyclass(get_all)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::database::ShaderProgram)]
+        pub struct ShaderProgram {
+            #[map(from(map_from_btree), into(map_into_btree))]
+            pub samplers: Py<PyDict>,
+
+            #[map(from(map_from_btree), into(map_into_btree))]
+            pub parameters: Py<PyDict>,
+        }
+
+        #[pymethods]
+        impl ShaderDatabase {
+            #[staticmethod]
+            pub fn from_file(path: &str) -> PyResult<Self> {
+                Ok(Self(sm4sh_model::database::ShaderDatabase::from_file(path)))
+            }
+
+            pub fn get_shader(
+                &self,
+                py: Python,
+                shader_id: u32,
+            ) -> PyResult<Option<ShaderProgram>> {
+                self.0
+                    .get_shader(shader_id)
+                    .map(|s| s.clone().map_py(py))
+                    .transpose()
+            }
+        }
+
+        fn map_from_btree(value: BTreeMap<usize, String>, py: Python) -> PyResult<Py<PyDict>> {
+            let dict = PyDict::new(py);
+            for (k, v) in value.into_iter() {
+                dict.set_item(k, v)?;
+            }
+            Ok(dict.into())
+        }
+
+        fn map_into_btree(value: Py<PyDict>, py: Python) -> PyResult<BTreeMap<usize, String>> {
+            value.extract(py)
         }
     }
 
