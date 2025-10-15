@@ -102,10 +102,10 @@ python_enum!(
     Disabled,
     Never,
     Less,
-    Eq,
-    Leq,
-    Neq,
-    Geq,
+    Equal,
+    Greater,
+    NotEqual,
+    GreaterEqual,
     Always
 );
 
@@ -397,6 +397,7 @@ mod sm4sh_model_py {
         pub src_factor: SrcFactor,
         pub dst_factor: DstFactor,
         pub alpha_func: AlphaFunc,
+        pub alpha_test_ref: u16,
         pub cull_mode: CullMode,
         pub textures: TypedList<NudTexture>,
         pub properties: TypedList<NudProperty>,
@@ -410,6 +411,7 @@ mod sm4sh_model_py {
             src_factor: SrcFactor,
             dst_factor: DstFactor,
             alpha_func: AlphaFunc,
+            alpha_test_ref: u16,
             cull_mode: CullMode,
             textures: TypedList<NudTexture>,
             properties: TypedList<NudProperty>,
@@ -419,6 +421,7 @@ mod sm4sh_model_py {
                 src_factor,
                 dst_factor,
                 alpha_func,
+                alpha_test_ref,
                 cull_mode,
                 textures,
                 properties,
@@ -487,6 +490,7 @@ mod sm4sh_model_py {
         pub width: u32,
         pub height: u32,
         pub mipmap_count: u32,
+        pub layers: u32,
         pub image_format: NutFormat,
         pub image_data: Vec<u8>,
     }
@@ -499,6 +503,7 @@ mod sm4sh_model_py {
             width: u32,
             height: u32,
             mipmap_count: u32,
+            layers: u32,
             image_format: NutFormat,
             image_data: Vec<u8>,
         ) -> Self {
@@ -507,6 +512,7 @@ mod sm4sh_model_py {
                 width,
                 height,
                 mipmap_count,
+                layers,
                 image_format,
                 image_data,
             }
@@ -742,10 +748,8 @@ mod sm4sh_model_py {
 
     #[pymodule]
     mod database {
-        use std::collections::BTreeMap;
-
-        use map_py::MapPy;
-        use pyo3::{prelude::*, types::PyDict};
+        use map_py::{MapPy, TypedDict, TypedList};
+        use pyo3::prelude::*;
 
         #[pyclass]
         #[derive(Debug, Clone, MapPy)]
@@ -756,18 +760,21 @@ mod sm4sh_model_py {
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::database::ShaderProgram)]
         pub struct ShaderProgram {
-            #[map(from(map_from_btree), into(map_into_btree))]
-            pub samplers: Py<PyDict>,
-
-            #[map(from(map_from_btree), into(map_into_btree))]
-            pub parameters: Py<PyDict>,
+            pub output_dependencies: TypedDict<String, usize>,
+            pub exprs: TypedList<OutputExpr>,
+            pub attributes: TypedList<String>,
+            pub samplers: TypedList<String>,
+            pub parameters: TypedList<String>,
         }
 
         #[pymethods]
         impl ShaderDatabase {
             #[staticmethod]
             pub fn from_file(path: &str) -> PyResult<Self> {
-                Ok(Self(sm4sh_model::database::ShaderDatabase::from_file(path)))
+                // TODO: Avoid unwrap.
+                Ok(Self(
+                    sm4sh_model::database::ShaderDatabase::from_file(path).unwrap(),
+                ))
             }
 
             pub fn get_shader(
@@ -782,17 +789,12 @@ mod sm4sh_model_py {
             }
         }
 
-        fn map_from_btree(value: BTreeMap<usize, String>, py: Python) -> PyResult<Py<PyDict>> {
-            let dict = PyDict::new(py);
-            for (k, v) in value.into_iter() {
-                dict.set_item(k, v)?;
-            }
-            Ok(dict.into())
-        }
-
-        fn map_into_btree(value: Py<PyDict>, py: Python) -> PyResult<BTreeMap<usize, String>> {
-            value.extract(py)
-        }
+        // TODO: Methods for accessing variants.
+        // TODO: Operation enum
+        #[pyclass]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::database::OutputExpr<sm4sh_model::database::Operation>)]
+        pub struct OutputExpr(sm4sh_model::database::OutputExpr<sm4sh_model::database::Operation>);
     }
 
     #[pymodule]
