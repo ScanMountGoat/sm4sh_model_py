@@ -201,6 +201,42 @@ python_enum!(
     Float16
 );
 
+python_enum!(
+    Operation,
+    sm4sh_model::database::Operation,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mix,
+    Clamp,
+    Min,
+    Max,
+    Abs,
+    Floor,
+    Power,
+    Sqrt,
+    InverseSqrt,
+    Fma,
+    Dot4,
+    Sin,
+    Cos,
+    Exp2,
+    Log2,
+    Fract,
+    IntBitsToFloat,
+    FloatBitsToInt,
+    Select,
+    Negate,
+    Equal,
+    NotEqual,
+    Less,
+    Greater,
+    LessEqual,
+    GreaterEqual,
+    Unk
+);
+
 // Match the module hierarchy and types of sm4sh_model as closely as possible.
 #[pymodule]
 mod sm4sh_model_py {
@@ -789,12 +825,110 @@ mod sm4sh_model_py {
             }
         }
 
-        // TODO: Methods for accessing variants.
-        // TODO: Operation enum
         #[pyclass]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::database::OutputExpr<sm4sh_model::database::Operation>)]
         pub struct OutputExpr(sm4sh_model::database::OutputExpr<sm4sh_model::database::Operation>);
+
+        #[pymodule_export]
+        use super::super::Operation;
+
+        #[pyclass(get_all, set_all)]
+        #[derive(Debug, Clone)]
+        pub struct OutputExprFunc {
+            pub op: Operation,
+            pub args: Vec<usize>,
+        }
+
+        #[pyclass]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::database::Value)]
+        pub struct Value(sm4sh_model::database::Value);
+
+        #[pyclass(get_all, set_all)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::database::Parameter)]
+        pub struct Parameter {
+            pub name: String,
+            pub field: String,
+            pub index: Option<usize>,
+            pub channel: Option<char>,
+        }
+
+        #[pyclass(get_all, set_all)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::database::Texture)]
+        pub struct Texture {
+            pub name: String,
+            pub channel: Option<char>,
+            pub texcoords: Vec<usize>,
+        }
+
+        #[pyclass(get_all, set_all)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::database::Attribute)]
+        pub struct Attribute {
+            pub name: String,
+            pub channel: Option<char>,
+        }
+
+        #[pymethods]
+        impl OutputExpr {
+            pub fn value(&self) -> Option<Value> {
+                match &self.0 {
+                    sm4sh_model::database::OutputExpr::Value(v) => Some(Value(v.clone())),
+                    _ => None,
+                }
+            }
+
+            pub fn func(&self) -> Option<OutputExprFunc> {
+                match &self.0 {
+                    sm4sh_model::database::OutputExpr::Func { op, args } => Some(OutputExprFunc {
+                        op: (*op).into(),
+                        args: args.clone(),
+                    }),
+                    _ => None,
+                }
+            }
+        }
+
+        #[pymethods]
+        impl Value {
+            pub fn int(&self) -> Option<i32> {
+                match &self.0 {
+                    sm4sh_model::database::Value::Int(i) => Some(*i),
+                    _ => None,
+                }
+            }
+
+            pub fn float(&self) -> Option<f32> {
+                match &self.0 {
+                    sm4sh_model::database::Value::Float(c) => Some(c.0),
+                    _ => None,
+                }
+            }
+
+            pub fn parameter(&self, py: Python) -> PyResult<Option<Parameter>> {
+                match &self.0 {
+                    sm4sh_model::database::Value::Parameter(b) => b.clone().map_py(py).map(Some),
+                    _ => Ok(None),
+                }
+            }
+
+            pub fn texture(&self, py: Python) -> PyResult<Option<Texture>> {
+                match &self.0 {
+                    sm4sh_model::database::Value::Texture(t) => t.clone().map_py(py).map(Some),
+                    _ => Ok(None),
+                }
+            }
+
+            pub fn attribute(&self, py: Python) -> PyResult<Option<Attribute>> {
+                match &self.0 {
+                    sm4sh_model::database::Value::Attribute(a) => a.clone().map_py(py).map(Some),
+                    _ => Ok(None),
+                }
+            }
+        }
     }
 
     #[pymodule]
