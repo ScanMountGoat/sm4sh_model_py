@@ -1088,8 +1088,8 @@ mod sm4sh_model_py {
 
                 let items = normals
                     .into_iter()
-                    .zip(tangents.into_iter())
-                    .zip(bitangents.into_iter())
+                    .zip(tangents)
+                    .zip(bitangents)
                     .map(|((normal, tangent), bitangent)| {
                         sm4sh_model::vertex::NormalsTangentBitangentFloat16 {
                             normal: normal.map(f16::from_f32),
@@ -1117,8 +1117,8 @@ mod sm4sh_model_py {
 
                 let items = normals
                     .into_iter()
-                    .zip(tangents.into_iter())
-                    .zip(bitangents.into_iter())
+                    .zip(tangents)
+                    .zip(bitangents)
                     .map(|((normal, tangent), bitangent)| {
                         sm4sh_model::vertex::NormalsTangentBitangentFloat32 {
                             unk1: 1.0,
