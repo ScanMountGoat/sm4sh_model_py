@@ -792,17 +792,6 @@ mod sm4sh_model_py {
         #[map(sm4sh_model::database::ShaderDatabase)]
         pub struct ShaderDatabase(sm4sh_model::database::ShaderDatabase);
 
-        #[pyclass(get_all)]
-        #[derive(Debug, Clone, MapPy)]
-        #[map(sm4sh_model::database::ShaderProgram)]
-        pub struct ShaderProgram {
-            pub output_dependencies: TypedDict<String, usize>,
-            pub exprs: TypedList<OutputExpr>,
-            pub attributes: TypedList<String>,
-            pub samplers: TypedList<String>,
-            pub parameters: TypedList<String>,
-        }
-
         #[pymethods]
         impl ShaderDatabase {
             #[staticmethod]
@@ -822,6 +811,30 @@ mod sm4sh_model_py {
                     .get_shader(shader_id)
                     .map(|s| s.clone().map_py(py))
                     .transpose()
+            }
+        }
+
+        #[pyclass(get_all)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::database::ShaderProgram)]
+        pub struct ShaderProgram {
+            pub output_dependencies: TypedDict<String, usize>,
+            pub exprs: TypedList<OutputExpr>,
+            pub attributes: TypedList<String>,
+            pub samplers: TypedList<String>,
+            pub parameters: TypedList<String>,
+        }
+
+        #[pymethods]
+        impl ShaderProgram {
+            pub fn parameter_value(
+                &self,
+                py: Python,
+                parameter: Parameter,
+            ) -> PyResult<Option<f32>> {
+                let program: sm4sh_model::database::ShaderProgram = self.clone().map_py(py)?;
+                let parameter: sm4sh_model::database::Parameter = parameter.map_py(py)?;
+                Ok(program.parameter_value(&parameter))
             }
         }
 
