@@ -234,6 +234,12 @@ python_enum!(
     Greater,
     LessEqual,
     GreaterEqual,
+    NormalMapX,
+    NormalMapY,
+    NormalMapZ,
+    NormalizeX,
+    NormalizeY,
+    NormalizeZ,
     Unk
 );
 
