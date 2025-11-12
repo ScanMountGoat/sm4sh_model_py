@@ -204,6 +204,7 @@ python_enum!(
 python_enum!(
     Operation,
     sm4sh_model::database::Operation,
+    Unk,
     Add,
     Sub,
     Mul,
@@ -240,7 +241,8 @@ python_enum!(
     NormalizeX,
     NormalizeY,
     NormalizeZ,
-    Unk
+    SphereMapCoordX,
+    SphereMapCoordY
 );
 
 // Match the module hierarchy and types of sm4sh_model as closely as possible.
