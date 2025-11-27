@@ -219,7 +219,7 @@ python_enum!(
     Sqrt,
     InverseSqrt,
     Fma,
-    Dot4,
+    Dot,
     Sin,
     Cos,
     Exp2,
@@ -242,7 +242,13 @@ python_enum!(
     NormalizeY,
     NormalizeZ,
     SphereMapCoordX,
-    SphereMapCoordY
+    SphereMapCoordY,
+    LocalToWorldPointX,
+    LocalToWorldPointY,
+    LocalToWorldPointZ,
+    LocalToWorldVectorX,
+    LocalToWorldVectorY,
+    LocalToWorldVectorZ
 );
 
 // Match the module hierarchy and types of sm4sh_model as closely as possible.
