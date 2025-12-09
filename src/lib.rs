@@ -964,6 +964,8 @@ mod sm4sh_model_py {
         use numpy::PyArray2;
         use pyo3::prelude::*;
 
+        use crate::BoneElementType;
+
         #[pyclass(get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::skinning::Influence)]
@@ -1033,6 +1035,7 @@ mod sm4sh_model_py {
                 influences: TypedList<Influence>,
                 vertex_count: usize,
                 bone_names: TypedList<String>,
+                element_type: BoneElementType,
             ) -> PyResult<Self> {
                 let influences: Vec<_> = influences.map_py(py)?;
                 let bone_names: Vec<String> = bone_names.map_py(py)?;
@@ -1040,6 +1043,7 @@ mod sm4sh_model_py {
                     &influences,
                     vertex_count,
                     &bone_names,
+                    element_type.map_py(py)?,
                 );
                 weights.map_py(py)
             }
