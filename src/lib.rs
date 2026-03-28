@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 #[macro_export]
 macro_rules! python_enum {
     ($py_ty:ident, $rust_ty:ty, $( $i:ident ),+) => {
-        #[pyclass(eq, eq_int)]
+        #[pyclass(from_py_object, eq, eq_int)]
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]
         pub enum $py_ty {
             $($i),*
@@ -272,13 +272,25 @@ mod sm4sh_model_py {
         model.map_py(py)
     }
 
-    #[pyclass]
+    #[pyclass(from_py_object)]
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_lib::nud::Nud)]
     pub struct Nud(sm4sh_lib::nud::Nud);
 
     #[pymethods]
     impl Nud {
+        fn save(&self, path: &str) -> PyResult<()> {
+            self.0.save(path).map_err(Into::into)
+        }
+    }
+
+    #[pyclass(from_py_object)]
+    #[derive(Debug, Clone, MapPy)]
+    #[map(sm4sh_lib::nut::Nut)]
+    pub struct Nut(sm4sh_lib::nut::Nut);
+
+    #[pymethods]
+    impl Nut {
         fn save(&self, path: &str) -> PyResult<()> {
             self.0.save(path).map_err(Into::into)
         }
@@ -302,7 +314,7 @@ mod sm4sh_model_py {
                     depth: 1,
                     layers: 1,
                     mipmaps: image.mipmap_count,
-                    image_format: format.into(),
+                    image_format: format.try_into().unwrap(),
                     data: &image.image_data,
                 };
 
@@ -330,7 +342,7 @@ mod sm4sh_model_py {
             .collect()
     }
 
-    #[pyclass(get_all, set_all)]
+    #[pyclass(from_py_object, get_all, set_all)]
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::NudModel)]
     pub struct NudModel {
@@ -364,9 +376,16 @@ mod sm4sh_model_py {
             let nud = model.to_nud().unwrap();
             Ok(Nud(nud))
         }
+
+        fn to_nut(&self, py: Python) -> PyResult<Nut> {
+            // TODO: Avoid unwrap.
+            let model: sm4sh_model::NudModel = self.clone().map_py(py)?;
+            let nut = model.to_nut().unwrap();
+            Ok(Nut(nut))
+        }
     }
 
-    #[pyclass(get_all, set_all)]
+    #[pyclass(from_py_object, get_all, set_all)]
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::NudMeshGroup)]
     pub struct NudMeshGroup {
@@ -397,7 +416,7 @@ mod sm4sh_model_py {
         }
     }
 
-    #[pyclass(get_all, set_all)]
+    #[pyclass(from_py_object, get_all, set_all)]
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::NudMesh)]
     pub struct NudMesh {
@@ -439,7 +458,7 @@ mod sm4sh_model_py {
         }
     }
 
-    #[pyclass(get_all, set_all)]
+    #[pyclass(from_py_object, get_all, set_all)]
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::NudMaterial)]
     pub struct NudMaterial {
@@ -479,7 +498,7 @@ mod sm4sh_model_py {
         }
     }
 
-    #[pyclass(get_all, set_all)]
+    #[pyclass(from_py_object, get_all, set_all)]
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::NudTexture)]
     pub struct NudTexture {
@@ -516,7 +535,7 @@ mod sm4sh_model_py {
         }
     }
 
-    #[pyclass(get_all, set_all)]
+    #[pyclass(from_py_object, get_all, set_all)]
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::NudProperty)]
     pub struct NudProperty {
@@ -532,7 +551,7 @@ mod sm4sh_model_py {
         }
     }
 
-    #[pyclass(get_all, set_all)]
+    #[pyclass(from_py_object, get_all, set_all)]
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::ImageTexture)]
     pub struct ImageTexture {
@@ -569,7 +588,7 @@ mod sm4sh_model_py {
         }
     }
 
-    #[pyclass(get_all, set_all)]
+    #[pyclass(from_py_object, get_all, set_all)]
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::VbnSkeleton)]
     pub struct VbnSkeleton {
@@ -589,7 +608,7 @@ mod sm4sh_model_py {
         }
     }
 
-    #[pyclass(get_all, set_all)]
+    #[pyclass(from_py_object, get_all, set_all)]
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::VbnBone)]
     pub struct VbnBone {
@@ -695,7 +714,7 @@ mod sm4sh_model_py {
             Ok(list)
         }
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::animation::Animation)]
         pub struct Animation {
@@ -782,12 +801,12 @@ mod sm4sh_model_py {
             }
         }
 
-        #[pyclass]
+        #[pyclass(from_py_object)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::animation::AnimationNode)]
         pub struct AnimationNode(sm4sh_model::animation::AnimationNode);
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone)]
         pub struct FCurves {
             pub translation: Py<PyDict>,
@@ -801,7 +820,7 @@ mod sm4sh_model_py {
         use map_py::{MapPy, TypedDict, TypedList};
         use pyo3::prelude::*;
 
-        #[pyclass]
+        #[pyclass(from_py_object)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::database::ShaderDatabase)]
         pub struct ShaderDatabase(sm4sh_model::database::ShaderDatabase);
@@ -828,7 +847,7 @@ mod sm4sh_model_py {
             }
         }
 
-        #[pyclass(get_all)]
+        #[pyclass(from_py_object, get_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::database::ShaderProgram)]
         pub struct ShaderProgram {
@@ -852,7 +871,7 @@ mod sm4sh_model_py {
             }
         }
 
-        #[pyclass]
+        #[pyclass(from_py_object)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::database::OutputExpr<sm4sh_model::database::Operation>)]
         pub struct OutputExpr(sm4sh_model::database::OutputExpr<sm4sh_model::database::Operation>);
@@ -860,19 +879,19 @@ mod sm4sh_model_py {
         #[pymodule_export]
         use super::super::Operation;
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone)]
         pub struct OutputExprFunc {
             pub op: Operation,
             pub args: Vec<usize>,
         }
 
-        #[pyclass]
+        #[pyclass(from_py_object)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::database::Value)]
         pub struct Value(sm4sh_model::database::Value);
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::database::Parameter)]
         pub struct Parameter {
@@ -882,7 +901,7 @@ mod sm4sh_model_py {
             pub channel: Option<char>,
         }
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::database::Texture)]
         pub struct Texture {
@@ -891,7 +910,7 @@ mod sm4sh_model_py {
             pub texcoords: Vec<usize>,
         }
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::database::Attribute)]
         pub struct Attribute {
@@ -966,7 +985,7 @@ mod sm4sh_model_py {
 
         use crate::BoneElementType;
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::skinning::Influence)]
         pub struct Influence {
@@ -982,7 +1001,7 @@ mod sm4sh_model_py {
             }
         }
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::skinning::VertexWeight)]
         pub struct VertexWeight {
@@ -1001,7 +1020,7 @@ mod sm4sh_model_py {
             }
         }
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::skinning::SkinWeights)]
         pub struct SkinWeights {
@@ -1060,7 +1079,7 @@ mod sm4sh_model_py {
         use numpy::PyArray2;
         use pyo3::prelude::*;
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::vertex::Vertices)]
         pub struct Vertices {
@@ -1095,7 +1114,7 @@ mod sm4sh_model_py {
 
         // TODO: Rework these to be representable using numpy arrays.
         // TODO: Complex enums?
-        #[pyclass]
+        #[pyclass(from_py_object)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::vertex::Normals)]
         pub struct Normals(sm4sh_model::vertex::Normals);
@@ -1166,7 +1185,7 @@ mod sm4sh_model_py {
             }
         }
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::vertex::Bones)]
         pub struct Bones {
@@ -1194,7 +1213,7 @@ mod sm4sh_model_py {
         #[pymodule_export]
         use super::super::BoneElementType;
 
-        #[pyclass(get_all, set_all)]
+        #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::vertex::Colors)]
         pub struct Colors {
@@ -1216,7 +1235,7 @@ mod sm4sh_model_py {
         #[pymodule_export]
         use super::super::ColorElementType;
 
-        #[pyclass]
+        #[pyclass(from_py_object)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::vertex::Uvs)]
         pub struct Uvs(sm4sh_model::vertex::Uvs);
