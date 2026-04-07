@@ -261,7 +261,7 @@ mod sm4sh_model_py {
 
     use map_py::helpers::{from_option_py, into_option_py};
     use map_py::{MapPy, TypedList};
-    use numpy::{PyArray1, PyArray3};
+    use numpy::{PyArray1, PyArray3, PyArrayMethods, PyReadonlyArrayDyn};
     use pyo3::types::PyBytes;
     use rayon::prelude::*;
 
@@ -340,6 +340,136 @@ mod sm4sh_model_py {
                 Ok(PyBytes::new(py, &writer.into_inner()).into())
             })
             .collect()
+    }
+
+    // Helper types for enabling parallel encoding.
+    #[pyclass(get_all, set_all)]
+    pub struct EncodeSurfaceRgba32FloatArgs {
+        pub hash_id: u32,
+        pub width: u32,
+        pub height: u32,
+        pub layers: u32,
+        pub image_format: NutFormat,
+        pub mipmaps: bool,
+        pub data: Py<PyArray1<f32>>,
+    }
+
+    #[pymethods]
+    impl EncodeSurfaceRgba32FloatArgs {
+        #[new]
+        fn new(
+            hash_id: u32,
+            width: u32,
+            height: u32,
+            layers: u32,
+            image_format: NutFormat,
+            mipmaps: bool,
+            data: Py<PyArray1<f32>>,
+        ) -> Self {
+            Self {
+                hash_id,
+                width,
+                height,
+                layers,
+                image_format,
+                mipmaps,
+                data,
+            }
+        }
+
+        fn encode(&self, py: Python) -> PyResult<ImageTexture> {
+            let surface = self.to_surface(py)?;
+
+            let format: sm4sh_model::NutFormat = self.image_format.into();
+            let encoded_surface = surface
+                .encode(
+                    format.try_into().unwrap(),
+                    image_dds::Quality::Normal,
+                    if self.mipmaps {
+                        image_dds::Mipmaps::GeneratedAutomatic
+                    } else {
+                        image_dds::Mipmaps::Disabled
+                    },
+                )
+                .unwrap();
+
+            Ok(ImageTexture {
+                hash_id: self.hash_id,
+                width: encoded_surface.width,
+                height: encoded_surface.height,
+                mipmap_count: encoded_surface.mipmaps,
+                layers: encoded_surface.layers,
+                image_format: self.image_format,
+                image_data: encoded_surface.data,
+            })
+        }
+    }
+
+    impl EncodeSurfaceRgba32FloatArgs {
+        fn to_surface(&self, py: Python) -> PyResult<image_dds::SurfaceRgba32Float<Vec<f32>>> {
+            // Handle any dimensions but require the right data type.
+            // Converting to a vec will "flatten" the array.
+            let data: PyReadonlyArrayDyn<'_, f32> = self.data.extract(py)?;
+
+            Ok(image_dds::SurfaceRgba32Float {
+                width: self.width,
+                height: self.height,
+                depth: 1,
+                layers: self.layers,
+                mipmaps: 1,
+                data: data.to_vec()?,
+            })
+        }
+    }
+
+    #[pyfunction]
+    fn encode_images_rgbaf32(
+        py: Python,
+        images: Vec<PyRef<EncodeSurfaceRgba32FloatArgs>>,
+    ) -> PyResult<Vec<ImageTexture>> {
+        let surfaces = images
+            .iter()
+            .map(|image| {
+                Ok((
+                    image.hash_id,
+                    image.image_format,
+                    image.mipmaps,
+                    image.to_surface(py)?,
+                ))
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+
+        // Prevent Python from locking up while Rust processes data in parallel.
+        py.detach(move || {
+            surfaces
+                .into_par_iter()
+                .map(|(hash_id, image_format, mipmaps, surface)| {
+                    // TODO: quality?
+                    let format: sm4sh_model::NutFormat = image_format.into();
+                    let encoded_surface = surface
+                        .encode(
+                            format.try_into().unwrap(),
+                            image_dds::Quality::Normal,
+                            if mipmaps {
+                                image_dds::Mipmaps::GeneratedAutomatic
+                            } else {
+                                image_dds::Mipmaps::Disabled
+                            },
+                        )
+                        .unwrap();
+
+                    Ok(ImageTexture {
+                        hash_id,
+                        width: surface.width,
+                        height: surface.height,
+                        layers: surface.layers,
+                        image_format,
+                        mipmap_count: encoded_surface.mipmaps,
+                        image_data: encoded_surface.data,
+                    })
+                })
+                .collect()
+        })
     }
 
     #[pyclass(from_py_object, get_all, set_all)]
