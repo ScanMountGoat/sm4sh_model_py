@@ -312,7 +312,7 @@ mod sm4sh_model_py {
                     width: image.width,
                     height: image.height,
                     depth: 1,
-                    layers: 1,
+                    layers: image.layers,
                     mipmaps: image.mipmap_count,
                     image_format: format.try_into().unwrap(),
                     data: &image.image_data,
