@@ -303,7 +303,7 @@ mod sm4sh_model_py {
     ) -> PyResult<Vec<Py<PyBytes>>> {
         // TODO: avoid unwrap.
         let textures: Vec<&ImageTexture> = image_textures.iter().map(|i| i.deref()).collect();
-        let buffers = textures
+        let images = textures
             .par_iter()
             .map(|image| {
                 // Create the surface manually to avoid copies.
@@ -323,19 +323,14 @@ mod sm4sh_model_py {
                     .decode_layers_mipmaps_rgba8(0..surface.layers, 0..1)
                     .unwrap()
                     .into_image()
-                    .unwrap()
-                    .into_raw())
+                    .unwrap())
             })
             .collect::<PyResult<Vec<_>>>()?;
 
-        buffers
+        images
             .into_iter()
-            .zip(textures)
-            .map(|(buffer, texture)| {
+            .map(|image| {
                 let mut writer = Cursor::new(Vec::new());
-                let image =
-                    image_dds::image::RgbaImage::from_raw(texture.width, texture.height, buffer)
-                        .unwrap();
                 image
                     .write_to(&mut writer, image_dds::image::ImageFormat::Png)
                     .unwrap();
