@@ -318,10 +318,13 @@ mod sm4sh_model_py {
                     data: &image.image_data,
                 };
 
+                // Use into_image to add layers and depth slices to the height.
                 Ok(surface
                     .decode_layers_mipmaps_rgba8(0..surface.layers, 0..1)
                     .unwrap()
-                    .data)
+                    .into_image()
+                    .unwrap()
+                    .into_raw())
             })
             .collect::<PyResult<Vec<_>>>()?;
 
