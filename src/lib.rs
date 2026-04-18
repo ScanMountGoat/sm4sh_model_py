@@ -1198,6 +1198,19 @@ mod sm4sh_model_py {
     }
 
     #[pymodule]
+    mod texture {
+        use map_py::{MapPy, TypedList};
+        use pyo3::prelude::*;
+
+        use crate::sm4sh_model_py::ImageTexture;
+
+        #[pyfunction]
+        fn global_textures(py: Python) -> PyResult<TypedList<ImageTexture>> {
+            sm4sh_model::texture::global_textures().map_py(py)
+        }
+    }
+
+    #[pymodule]
     mod vertex {
         use half::f16;
         use map_py::{
