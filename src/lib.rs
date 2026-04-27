@@ -259,7 +259,7 @@ mod sm4sh_model_py {
     use std::io::Cursor;
     use std::ops::Deref;
 
-    use map_py::helpers::{from_option_py, into_option_py};
+    use map_py::helpers::{from_option_py, from_py, into_option_py, into_py};
     use map_py::{MapPy, TypedList};
     use numpy::{PyArray1, PyArray3, PyArrayMethods, PyReadonlyArrayDyn};
     use pyo3::types::PyBytes;
@@ -548,26 +548,35 @@ mod sm4sh_model_py {
     #[derive(Debug, Clone, MapPy)]
     #[map(sm4sh_model::NudMesh)]
     pub struct NudMesh {
-        pub vertices: vertex::Vertices,
+        #[map(from(into_py), into(from_py))]
+        pub vertices: Py<vertex::Vertices>,
         pub vertex_indices: Py<PyArray1<u16>>,
         pub primitive_type: PrimitiveType,
-        pub material1: Option<NudMaterial>,
-        pub material2: Option<NudMaterial>,
-        pub material3: Option<NudMaterial>,
-        pub material4: Option<NudMaterial>,
+
+        #[map(from(into_option_py), into(from_option_py))]
+        pub material1: Option<Py<NudMaterial>>,
+
+        #[map(from(into_option_py), into(from_option_py))]
+        pub material2: Option<Py<NudMaterial>>,
+
+        #[map(from(into_option_py), into(from_option_py))]
+        pub material3: Option<Py<NudMaterial>>,
+
+        #[map(from(into_option_py), into(from_option_py))]
+        pub material4: Option<Py<NudMaterial>>,
     }
 
     #[pymethods]
     impl NudMesh {
         #[new]
         fn new(
-            vertices: vertex::Vertices,
+            vertices: Py<vertex::Vertices>,
             vertex_indices: Py<PyArray1<u16>>,
             primitive_type: PrimitiveType,
-            material1: Option<NudMaterial>,
-            material2: Option<NudMaterial>,
-            material3: Option<NudMaterial>,
-            material4: Option<NudMaterial>,
+            material1: Option<Py<NudMaterial>>,
+            material2: Option<Py<NudMaterial>>,
+            material3: Option<Py<NudMaterial>>,
+            material4: Option<Py<NudMaterial>>,
         ) -> Self {
             Self {
                 vertices,
@@ -1215,7 +1224,7 @@ mod sm4sh_model_py {
         use half::f16;
         use map_py::{
             MapPy, TypedList,
-            helpers::{from_option_py, into_option_py},
+            helpers::{from_option_py, from_py, into_option_py, into_py},
         };
         use numpy::PyArray2;
         use pyo3::prelude::*;
@@ -1225,12 +1234,18 @@ mod sm4sh_model_py {
         #[map(sm4sh_model::vertex::Vertices)]
         pub struct Vertices {
             pub positions: Py<PyArray2<f32>>,
-            pub normals: Normals,
+
+            #[map(from(into_py), into(from_py))]
+            pub normals: Py<Normals>,
+
             #[map(from(into_option_py), into(from_option_py))]
             pub bones: Option<Py<Bones>>,
+
             #[map(from(into_option_py), into(from_option_py))]
             pub colors: Option<Py<Colors>>,
-            pub uvs: Uvs,
+
+            #[map(from(into_py), into(from_py))]
+            pub uvs: Py<Uvs>,
         }
 
         #[pymethods]
@@ -1238,10 +1253,10 @@ mod sm4sh_model_py {
             #[new]
             fn new(
                 positions: Py<PyArray2<f32>>,
-                normals: Normals,
+                normals: Py<Normals>,
                 bones: Option<Py<Bones>>,
                 colors: Option<Py<Colors>>,
-                uvs: Uvs,
+                uvs: Py<Uvs>,
             ) -> Self {
                 Self {
                     positions,
