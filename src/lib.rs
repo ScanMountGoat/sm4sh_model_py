@@ -1115,6 +1115,36 @@ mod sm4sh_model_py {
     }
 
     #[pymodule]
+    mod model {
+        use super::{NudMesh, NudMeshGroup};
+        use map_py::{
+            MapPy, TypedList,
+            helpers::{from_py, into_py},
+        };
+        use pyo3::prelude::*;
+
+        #[pyfunction]
+        fn create_mesh_groups(
+            py: Python,
+            meshes: TypedList<NudMeshGroupMesh>,
+        ) -> PyResult<TypedList<NudMeshGroup>> {
+            let meshes: Vec<_> = meshes.map_py(py)?;
+            sm4sh_model::model::create_mesh_groups(&meshes).map_py(py)
+        }
+
+        #[pyclass(from_py_object, get_all, set_all)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::model::NudMeshGroupMesh)]
+        pub struct NudMeshGroupMesh {
+            pub name: String,
+            pub sort_bias: f32,
+            pub parent_bone_index: Option<usize>,
+            #[map(from(into_py), into(from_py))]
+            pub mesh: Py<NudMesh>,
+        }
+    }
+
+    #[pymodule]
     mod skinning {
         use map_py::{MapPy, TypedList};
         use numpy::PyArray2;
