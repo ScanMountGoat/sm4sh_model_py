@@ -1142,6 +1142,24 @@ mod sm4sh_model_py {
             #[map(from(into_py), into(from_py))]
             pub mesh: Py<NudMesh>,
         }
+
+        #[pymethods]
+        impl NudMeshGroupMesh {
+            #[new]
+            fn new(
+                name: String,
+                sort_bias: f32,
+                parent_bone_index: Option<usize>,
+                mesh: Py<NudMesh>,
+            ) -> Self {
+                Self {
+                    name,
+                    sort_bias,
+                    parent_bone_index,
+                    mesh,
+                }
+            }
+        }
     }
 
     #[pymodule]
