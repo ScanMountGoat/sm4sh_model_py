@@ -262,7 +262,7 @@ mod sm4sh_model_py {
     use map_py::helpers::{from_option_py, from_py, into_option_py, into_py};
     use map_py::{MapPy, TypedList};
     use numpy::{PyArray1, PyArray3, PyArrayMethods, PyReadonlyArrayDyn};
-    use pyo3::types::PyBytes;
+    use pyo3::types::{PyBytes, PyDict};
     use rayon::prelude::*;
 
     #[pyfunction]
@@ -511,6 +511,11 @@ mod sm4sh_model_py {
             let nut = model.to_nut().unwrap();
             Ok(Nut(nut))
         }
+
+        fn __deepcopy__(&self, py: Python, _memo: Py<PyDict>) -> Self {
+            let copy: sm4sh_model::NudModel = self.clone().map_py(py).unwrap();
+            copy.map_py(py).unwrap()
+        }
     }
 
     #[pyclass(from_py_object, get_all, set_all)]
@@ -541,6 +546,11 @@ mod sm4sh_model_py {
                 bounding_sphere,
                 parent_bone_index,
             }
+        }
+
+        fn __deepcopy__(&self, py: Python, _memo: Py<PyDict>) -> Self {
+            let copy: sm4sh_model::NudMeshGroup = self.clone().map_py(py).unwrap();
+            copy.map_py(py).unwrap()
         }
     }
 
@@ -593,6 +603,11 @@ mod sm4sh_model_py {
             let mesh: sm4sh_model::NudMesh = self.clone().map_py(py)?;
             mesh.triangle_list_indices().to_vec().map_py(py)
         }
+
+        fn __deepcopy__(&self, py: Python, _memo: Py<PyDict>) -> Self {
+            let copy: sm4sh_model::NudMesh = self.clone().map_py(py).unwrap();
+            copy.map_py(py).unwrap()
+        }
     }
 
     #[pyclass(from_py_object, get_all, set_all)]
@@ -632,6 +647,11 @@ mod sm4sh_model_py {
                 textures,
                 properties,
             }
+        }
+
+        fn __deepcopy__(&self, py: Python, _memo: Py<PyDict>) -> Self {
+            let copy: sm4sh_model::NudMaterial = self.clone().map_py(py).unwrap();
+            copy.map_py(py).unwrap()
         }
     }
 
@@ -1121,7 +1141,7 @@ mod sm4sh_model_py {
             MapPy, TypedList,
             helpers::{from_py, into_py},
         };
-        use pyo3::prelude::*;
+        use pyo3::{prelude::*, types::PyDict};
 
         #[pyfunction]
         fn create_mesh_groups(
@@ -1158,6 +1178,11 @@ mod sm4sh_model_py {
                     parent_bone_index,
                     mesh,
                 }
+            }
+
+            fn __deepcopy__(&self, py: Python, _memo: Py<PyDict>) -> Self {
+                let copy: sm4sh_model::model::NudMeshGroupMesh = self.clone().map_py(py).unwrap();
+                copy.map_py(py).unwrap()
             }
         }
     }
