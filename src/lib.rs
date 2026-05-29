@@ -248,7 +248,8 @@ python_enum!(
     LocalToWorldPointZ,
     LocalToWorldVectorX,
     LocalToWorldVectorY,
-    LocalToWorldVectorZ
+    LocalToWorldVectorZ,
+    VarianceShadow
 );
 
 // Match the module hierarchy and types of sm4sh_model as closely as possible.
