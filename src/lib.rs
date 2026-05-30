@@ -249,7 +249,10 @@ python_enum!(
     LocalToWorldVectorX,
     LocalToWorldVectorY,
     LocalToWorldVectorZ,
-    VarianceShadow
+    VarianceShadow,
+    BlinnPhongSpecular,
+    AnisotropicSpecular,
+    Fresnel
 );
 
 // Match the module hierarchy and types of sm4sh_model as closely as possible.
