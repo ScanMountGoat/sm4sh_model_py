@@ -6,3 +6,5 @@ The compiled extension module can be imported just like any other Python file. O
 
 ## Building
 Build the project with `cargo build --release`. This will compile a native python module for the current Python interpreter. For use with Blender, make sure to build for the Python version used by Blender. This can be achieved by activating a virtual environment with the appropriate Python version or setting the Python interpeter using the `PYO3_PYTHON` environment variable. See the [PyO3 guide](https://pyo3.rs) for details.
+
+Generate the type stubs with `maturin generate-stubs --out <repo root dir>`. Make sure to keep the `sm4sh_model_py/__init__.py` file if it gets deleted.

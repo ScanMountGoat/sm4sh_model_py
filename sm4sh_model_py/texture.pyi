@@ -1,0 +1,3 @@
+from sm4sh_model_py import ImageTexture
+
+def global_textures() -> list[ImageTexture]: ...

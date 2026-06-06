@@ -6,8 +6,8 @@ edition = "2024"
 [dependencies]
 sm4sh_model = { git = "https://github.com/ScanMountGoat/sm4sh_lib", rev = "801e796" }
 sm4sh_lib = { git = "https://github.com/ScanMountGoat/sm4sh_lib", rev = "801e796" }
-pyo3 = { version = "0.28.0", features = ["extension-module", "py-clone"] }
-map_py = { git = "https://github.com/ScanMountGoat/map_py", rev = "2dea8c4" }
+pyo3 = { version = "0.28.0", features = ["extension-module", "py-clone", "experimental-inspect"] }
+map_py = { git = "https://github.com/ScanMountGoat/map_py", rev = "3d0f802" }
 numpy = "0.28.0"
 half = "2.6.0"
 image_dds = "0.7.1"
