@@ -5,6 +5,9 @@ from _typeshed import Incomplete
 
 from sm4sh_model_py.vertex import Vertices
 
+# TODO: Is there a way for pyo3 to generate these imports?
+from . import animation, database, model, skinning, texture, vertex
+
 @final
 class AlphaFunc:
     Always: Final[AlphaFunc]
