@@ -252,7 +252,65 @@ python_enum!(
     VarianceShadow,
     BlinnPhongSpecular,
     AnisotropicSpecular,
-    Fresnel
+    Fresnel,
+    TintColorX,
+    TintColorY,
+    TintColorZ
+);
+
+python_enum!(
+    OperationXyz,
+    sm4sh_model::database::OperationXyz,
+    Unk,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mix,
+    Clamp,
+    Min,
+    Max,
+    Abs,
+    Floor,
+    Power,
+    Sqrt,
+    InverseSqrt,
+    Fma,
+    Dot,
+    Sin,
+    Cos,
+    Exp2,
+    Log2,
+    Fract,
+    IntBitsToFloat,
+    FloatBitsToInt,
+    Select,
+    Negate,
+    Equal,
+    NotEqual,
+    Less,
+    Greater,
+    LessEqual,
+    GreaterEqual,
+    NormalMap,
+    Normalize,
+    LocalToWorldPoint,
+    LocalToWorldVector,
+    VarianceShadow,
+    BlinnPhongSpecular,
+    AnisotropicSpecular,
+    Fresnel,
+    TintColor
+);
+
+python_enum!(
+    ChannelXyz,
+    sm4sh_model::database::ChannelXyz,
+    Xyz,
+    X,
+    Y,
+    Z,
+    W
 );
 
 // Match the module hierarchy and types of sm4sh_model as closely as possible.
@@ -1014,6 +1072,8 @@ mod sm4sh_model_py {
         pub struct ShaderProgram {
             pub output_dependencies: TypedDict<String, usize>,
             pub exprs: TypedList<OutputExpr>,
+            pub output_dependencies_xyz: TypedDict<String, usize>,
+            pub exprs_xyz: TypedList<OutputExprXyz>,
             pub attributes: TypedList<String>,
             pub samplers: TypedList<String>,
             pub parameters: TypedList<String>,
@@ -1132,6 +1192,131 @@ mod sm4sh_model_py {
             pub fn attribute(&self, py: Python) -> PyResult<Option<Attribute>> {
                 match &self.0 {
                     sm4sh_model::database::Value::Attribute(a) => a.clone().map_py(py).map(Some),
+                    _ => Ok(None),
+                }
+            }
+        }
+
+        #[pyclass(from_py_object)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::database::OutputExprXyz<sm4sh_model::database::OperationXyz>)]
+        pub struct OutputExprXyz(
+            sm4sh_model::database::OutputExprXyz<sm4sh_model::database::OperationXyz>,
+        );
+
+        #[pymodule_export]
+        use super::super::OperationXyz;
+
+        #[pymodule_export]
+        use super::super::ChannelXyz;
+
+        #[pyclass(from_py_object, get_all, set_all)]
+        #[derive(Debug, Clone)]
+        pub struct OutputExprFuncXyz {
+            pub op: OperationXyz,
+            pub args: Vec<usize>,
+        }
+
+        #[pyclass(from_py_object)]
+        #[derive(Debug, Clone, MapPy)]
+        #[map(sm4sh_model::database::ValueXyz)]
+        pub struct ValueXyz(sm4sh_model::database::ValueXyz);
+
+        #[pyclass(from_py_object, get_all, set_all)]
+        #[derive(Debug, Clone)]
+        pub struct ParameterXyz {
+            pub name: String,
+            pub field: String,
+            pub index: Option<usize>,
+            pub channel: Option<ChannelXyz>,
+        }
+
+        #[pyclass(from_py_object, get_all, set_all)]
+        #[derive(Debug, Clone)]
+        pub struct TextureXyz {
+            pub name: String,
+            pub channel: Option<ChannelXyz>,
+            pub texcoords: Vec<usize>,
+        }
+
+        #[pyclass(from_py_object, get_all, set_all)]
+        #[derive(Debug, Clone)]
+        pub struct AttributeXyz {
+            pub name: String,
+            pub channel: Option<ChannelXyz>,
+        }
+
+        #[pymethods]
+        impl OutputExprXyz {
+            pub fn value(&self) -> Option<ValueXyz> {
+                match &self.0 {
+                    sm4sh_model::database::OutputExprXyz::Value(v) => Some(ValueXyz(v.clone())),
+                    _ => None,
+                }
+            }
+
+            pub fn func(&self) -> Option<OutputExprFuncXyz> {
+                match &self.0 {
+                    sm4sh_model::database::OutputExprXyz::Func { op, args } => {
+                        Some(OutputExprFuncXyz {
+                            op: (*op).into(),
+                            args: args.clone(),
+                        })
+                    }
+                    _ => None,
+                }
+            }
+        }
+
+        #[pymethods]
+        impl ValueXyz {
+            pub fn float(&self) -> Option<(f32, f32, f32)> {
+                match &self.0 {
+                    sm4sh_model::database::ValueXyz::Float(f) => Some((f[0].0, f[1].0, f[2].0)),
+                    _ => None,
+                }
+            }
+
+            pub fn parameter(&self, py: Python) -> PyResult<Option<ParameterXyz>> {
+                match &self.0 {
+                    sm4sh_model::database::ValueXyz::Parameter {
+                        name,
+                        field,
+                        index,
+                        channel,
+                    } => Ok(Some(ParameterXyz {
+                        name: name.to_string(),
+                        field: field.to_string(),
+                        index: *index,
+                        channel: channel.map_py(py)?,
+                    })),
+                    _ => Ok(None),
+                }
+            }
+
+            pub fn texture(&self, py: Python) -> PyResult<Option<TextureXyz>> {
+                match &self.0 {
+                    sm4sh_model::database::ValueXyz::Texture {
+                        name,
+                        channel,
+                        texcoords,
+                    } => Ok(Some(TextureXyz {
+                        name: name.to_string(),
+                        channel: channel.map_py(py)?,
+                        texcoords: texcoords.clone(),
+                    })),
+                    _ => Ok(None),
+                }
+            }
+
+            pub fn attribute(&self, py: Python) -> PyResult<Option<AttributeXyz>> {
+                match &self.0 {
+                    sm4sh_model::database::ValueXyz::Attribute { name, channel } => {
+                        Ok(Some(AttributeXyz {
+                            name: name.to_string(),
+                            channel: channel.map_py(py)?,
+                        }))
+                    }
                     _ => Ok(None),
                 }
             }
