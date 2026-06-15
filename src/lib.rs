@@ -1122,6 +1122,24 @@ mod sm4sh_model_py {
             pub channel: Option<char>,
         }
 
+        #[pymethods]
+        impl Parameter {
+            #[new]
+            fn new(
+                name: String,
+                field: String,
+                index: Option<usize>,
+                channel: Option<char>,
+            ) -> Self {
+                Self {
+                    name,
+                    field,
+                    index,
+                    channel,
+                }
+            }
+        }
+
         #[pyclass(from_py_object, get_all, set_all)]
         #[derive(Debug, Clone, MapPy)]
         #[map(sm4sh_model::database::Texture)]

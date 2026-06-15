@@ -175,6 +175,9 @@ class OutputExprXyz:
 
 @final
 class Parameter:
+    def __new__(
+        cls, /, name: str, field: str, index: int | None, channel: str | None
+    ) -> Parameter: ...
     @property
     def channel(self, /) -> str | None: ...
     @channel.setter
