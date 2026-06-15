@@ -1233,6 +1233,7 @@ mod sm4sh_model_py {
         pub struct OutputExprFuncXyz {
             pub op: OperationXyz,
             pub args: Vec<usize>,
+            pub channel: Option<ChannelXyz>,
         }
 
         #[pyclass(from_py_object)]
@@ -1275,10 +1276,11 @@ mod sm4sh_model_py {
 
             pub fn func(&self) -> Option<OutputExprFuncXyz> {
                 match &self.0 {
-                    sm4sh_model::database::OutputExprXyz::Func { op, args } => {
+                    sm4sh_model::database::OutputExprXyz::Func { op, args, channel } => {
                         Some(OutputExprFuncXyz {
                             op: (*op).into(),
                             args: args.clone(),
+                            channel: channel.map(Into::into),
                         })
                     }
                     _ => None,
@@ -1297,16 +1299,11 @@ mod sm4sh_model_py {
 
             pub fn parameter(&self, py: Python) -> PyResult<Option<ParameterXyz>> {
                 match &self.0 {
-                    sm4sh_model::database::ValueXyz::Parameter {
-                        name,
-                        field,
-                        index,
-                        channel,
-                    } => Ok(Some(ParameterXyz {
-                        name: name.to_string(),
-                        field: field.to_string(),
-                        index: *index,
-                        channel: channel.map_py(py)?,
+                    sm4sh_model::database::ValueXyz::Parameter(p) => Ok(Some(ParameterXyz {
+                        name: p.name.to_string(),
+                        field: p.field.to_string(),
+                        index: p.index,
+                        channel: p.channel.map_py(py)?,
                     })),
                     _ => Ok(None),
                 }
@@ -1314,14 +1311,10 @@ mod sm4sh_model_py {
 
             pub fn texture(&self, py: Python) -> PyResult<Option<TextureXyz>> {
                 match &self.0 {
-                    sm4sh_model::database::ValueXyz::Texture {
-                        name,
-                        channel,
-                        texcoords,
-                    } => Ok(Some(TextureXyz {
-                        name: name.to_string(),
-                        channel: channel.map_py(py)?,
-                        texcoords: texcoords.clone(),
+                    sm4sh_model::database::ValueXyz::Texture(t) => Ok(Some(TextureXyz {
+                        name: t.name.to_string(),
+                        channel: t.channel.map_py(py)?,
+                        texcoords: t.texcoords.clone(),
                     })),
                     _ => Ok(None),
                 }
@@ -1329,12 +1322,10 @@ mod sm4sh_model_py {
 
             pub fn attribute(&self, py: Python) -> PyResult<Option<AttributeXyz>> {
                 match &self.0 {
-                    sm4sh_model::database::ValueXyz::Attribute { name, channel } => {
-                        Ok(Some(AttributeXyz {
-                            name: name.to_string(),
-                            channel: channel.map_py(py)?,
-                        }))
-                    }
+                    sm4sh_model::database::ValueXyz::Attribute(a) => Ok(Some(AttributeXyz {
+                        name: a.name.to_string(),
+                        channel: a.channel.map_py(py)?,
+                    })),
                     _ => Ok(None),
                 }
             }
