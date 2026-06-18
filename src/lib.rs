@@ -219,7 +219,8 @@ python_enum!(
     Sqrt,
     InverseSqrt,
     Fma,
-    Dot,
+    Dot3,
+    Dot4,
     Sin,
     Cos,
     Exp2,
@@ -255,7 +256,10 @@ python_enum!(
     Fresnel,
     TintColorX,
     TintColorY,
-    TintColorZ
+    TintColorZ,
+    NegReflectX,
+    NegReflectY,
+    NegReflectZ
 );
 
 python_enum!(
@@ -300,7 +304,8 @@ python_enum!(
     BlinnPhongSpecular,
     AnisotropicSpecular,
     Fresnel,
-    TintColor
+    TintColor,
+    NegReflect
 );
 
 python_enum!(
