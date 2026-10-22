@@ -1,4 +1,4 @@
-from typing import final
+from typing import SupportsFloat, SupportsIndex, final
 
 from sm4sh_model_py import NudMesh, NudMeshGroup
 
@@ -9,8 +9,8 @@ class NudMeshGroupMesh:
         cls,
         /,
         name: str,
-        sort_bias: float,
-        parent_bone_index: int | None,
+        sort_bias: SupportsFloat | SupportsIndex,
+        parent_bone_index: SupportsIndex | None,
         mesh: NudMesh,
     ) -> NudMeshGroupMesh: ...
     @property
@@ -24,10 +24,10 @@ class NudMeshGroupMesh:
     @property
     def parent_bone_index(self, /) -> int | None: ...
     @parent_bone_index.setter
-    def parent_bone_index(self, /, value: int | None) -> None: ...
+    def parent_bone_index(self, /, value: SupportsIndex | None) -> None: ...
     @property
     def sort_bias(self, /) -> float: ...
     @sort_bias.setter
-    def sort_bias(self, /, value: float) -> None: ...
+    def sort_bias(self, /, value: SupportsFloat | SupportsIndex) -> None: ...
 
 def create_mesh_groups(meshes: list[NudMeshGroupMesh]) -> list[NudMeshGroup]: ...

@@ -1,4 +1,4 @@
-from typing import final
+from typing import SupportsFloat, SupportsIndex, final
 
 from _typeshed import Incomplete
 
@@ -6,26 +6,28 @@ from sm4sh_model_py import VbnSkeleton
 
 @final
 class Animation:
-    def __new__(cls, /, nodes: list[AnimationNode], frame_count: int) -> Animation: ...
+    def __new__(
+        cls, /, nodes: list[AnimationNode], frame_count: SupportsIndex
+    ) -> Animation: ...
     def fcurves(
         self, /, skeleton: VbnSkeleton, use_blender_coordinates: bool
     ) -> FCurves: ...
     @property
     def frame_count(self, /) -> int: ...
     @frame_count.setter
-    def frame_count(self, /, value: int) -> None: ...
+    def frame_count(self, /, value: SupportsIndex) -> None: ...
     def local_space_transforms(
-        self, /, skeleton: VbnSkeleton, frame: float
+        self, /, skeleton: VbnSkeleton, frame: SupportsFloat | SupportsIndex
     ) -> Incomplete: ...
     def model_space_transforms(
-        self, /, skeleton: VbnSkeleton, frame: float
+        self, /, skeleton: VbnSkeleton, frame: SupportsFloat | SupportsIndex
     ) -> Incomplete: ...
     @property
     def nodes(self, /) -> list[AnimationNode]: ...
     @nodes.setter
     def nodes(self, /, value: list[AnimationNode]) -> None: ...
     def skinning_transforms(
-        self, /, skeleton: VbnSkeleton, frame: float
+        self, /, skeleton: VbnSkeleton, frame: SupportsFloat | SupportsIndex
     ) -> Incomplete: ...
 
 @final

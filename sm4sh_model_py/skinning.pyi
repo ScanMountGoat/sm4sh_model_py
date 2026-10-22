@@ -1,4 +1,4 @@
-from typing import final
+from typing import SupportsFloat, SupportsIndex, final
 
 from _typeshed import Incomplete
 
@@ -32,7 +32,7 @@ class SkinWeights:
     @staticmethod
     def from_influences(
         influences: list[Influence],
-        vertex_count: int,
+        vertex_count: SupportsIndex,
         bone_names: list[str],
         element_type: BoneElementType,
     ) -> SkinWeights: ...
@@ -40,12 +40,14 @@ class SkinWeights:
 
 @final
 class VertexWeight:
-    def __new__(cls, /, vertex_index: int, weight: float) -> VertexWeight: ...
+    def __new__(
+        cls, /, vertex_index: SupportsIndex, weight: SupportsFloat | SupportsIndex
+    ) -> VertexWeight: ...
     @property
     def vertex_index(self, /) -> int: ...
     @vertex_index.setter
-    def vertex_index(self, /, value: int) -> None: ...
+    def vertex_index(self, /, value: SupportsIndex) -> None: ...
     @property
     def weight(self, /) -> float: ...
     @weight.setter
-    def weight(self, /, value: float) -> None: ...
+    def weight(self, /, value: SupportsFloat | SupportsIndex) -> None: ...
